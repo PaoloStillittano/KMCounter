@@ -6,11 +6,13 @@ import '../controllers/km_controller.dart';
 class CalendarWidget extends StatefulWidget {
   final KmController controller;
   final Function(DateTime) onDateSelected;
+  final Function(DateTime)? onMonthChanged; // NUOVO PARAMETRO
 
   const CalendarWidget({
     super.key,
     required this.controller,
     required this.onDateSelected,
+    this.onMonthChanged, // NUOVO PARAMETRO OPZIONALE
   });
 
   @override
@@ -26,6 +28,11 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     super.initState();
     _currentMonth = DateTime.now();
     _pageController = PageController();
+
+    // AGGIUNGI QUESTA RIGA per notificare il mese iniziale:
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onMonthChanged?.call(_currentMonth);
+    });
   }
 
   @override
@@ -45,8 +52,8 @@ class _CalendarWidgetState extends State<CalendarWidget> {
               Text(
                 _getMonthYearString(_currentMonth),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               IconButton(
                 onPressed: _nextMonth,
@@ -55,7 +62,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             ],
           ),
         ),
-        
+
         // Header giorni della settimana
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -63,7 +70,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             children: _buildWeekdayHeaders(),
           ),
         ),
-        
+
         // Calendario
         Expanded(
           child: _buildCalendarGrid(),
@@ -74,18 +81,22 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
   List<Widget> _buildWeekdayHeaders() {
     const weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-    return weekdays.map((day) => Expanded(
-      child: Center(
-        child: Text(
-          day,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: (day == 'Sab' || day == 'Dom') ? Colors.red : Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
-      ),
-    )).toList();
+    return weekdays
+        .map((day) => Expanded(
+              child: Center(
+                child: Text(
+                  day,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: (day == 'Sab' || day == 'Dom')
+                        ? Colors.red
+                        : Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ))
+        .toList();
   }
 
   Widget _buildCalendarGrid() {
@@ -108,12 +119,12 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         final hasEntries = entries.isNotEmpty;
         final isToday = _isToday(date);
         final isHoliday = _isItalianHoliday(date);
-    
+
         // Calculate category proportions
         double totalKm = 0;
         double personalKm = 0;
         double workKm = 0;
-        
+
         if (hasEntries) {
           for (var entry in entries) {
             totalKm += entry.kilometers;
@@ -150,7 +161,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                     ),
                   ),
                 ),
-                
+
                 // Category colors at the bottom of the cell
                 if (hasEntries && isCurrentMonth && totalKm > 0)
                   Positioned(
@@ -169,12 +180,14 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                 color: Colors.green.withOpacity(0.8),
                                 borderRadius: BorderRadius.only(
                                   bottomLeft: Radius.circular(7),
-                                  bottomRight: workKm <= 0 ? Radius.circular(7) : Radius.zero,
+                                  bottomRight: workKm <= 0
+                                      ? Radius.circular(7)
+                                      : Radius.zero,
                                 ),
                               ),
                             ),
                           ),
-                        
+
                         // Work category (right portion)
                         if (workKm > 0)
                           Expanded(
@@ -184,7 +197,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                                 color: Colors.orange.withOpacity(0.8),
                                 borderRadius: BorderRadius.only(
                                   bottomRight: Radius.circular(7),
-                                  bottomLeft: personalKm <= 0 ? Radius.circular(7) : Radius.zero,
+                                  bottomLeft: personalKm <= 0
+                                      ? Radius.circular(7)
+                                      : Radius.zero,
                                 ),
                               ),
                             ),
@@ -192,14 +207,17 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                       ],
                     ),
                   ),
-                
+
                 // Day number (on top of the colors)
                 Center(
                   child: Text(
                     '${date.day}',
                     style: TextStyle(
-                      color: _getDayTextColor(isToday, isHoliday, isCurrentMonth),
-                      fontWeight: hasEntries && isCurrentMonth ? FontWeight.bold : FontWeight.normal,
+                      color:
+                          _getDayTextColor(isToday, isHoliday, isCurrentMonth),
+                      fontWeight: hasEntries && isCurrentMonth
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: isCurrentMonth ? 14 : 12,
                     ),
                   ),
@@ -213,24 +231,28 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   }
 
   List<Map<String, dynamic>> _getCalendarDays() {
-    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
-    final lastDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
-    
+    final firstDayOfMonth =
+        DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final lastDayOfMonth =
+        DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
+
     // Calcola i giorni del mese precedente da mostrare
     final startingWeekday = firstDayOfMonth.weekday; // 1 = Lunedì, 7 = Domenica
     final daysFromPreviousMonth = startingWeekday - 1;
-    
+
     // Calcola i giorni del mese successivo da mostrare
     final endingWeekday = lastDayOfMonth.weekday;
     final daysFromNextMonth = 7 - endingWeekday;
-    
+
     List<Map<String, dynamic>> calendarDays = [];
-    
+
     // Aggiungi giorni del mese precedente
     if (daysFromPreviousMonth > 0) {
-      final previousMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
-      final lastDayPreviousMonth = DateTime(_currentMonth.year, _currentMonth.month, 0).day;
-      
+      final previousMonth =
+          DateTime(_currentMonth.year, _currentMonth.month - 1);
+      final lastDayPreviousMonth =
+          DateTime(_currentMonth.year, _currentMonth.month, 0).day;
+
       for (int i = daysFromPreviousMonth - 1; i >= 0; i--) {
         final day = lastDayPreviousMonth - i;
         calendarDays.add({
@@ -239,7 +261,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         });
       }
     }
-    
+
     // Aggiungi giorni del mese corrente
     for (int day = 1; day <= lastDayOfMonth.day; day++) {
       calendarDays.add({
@@ -247,11 +269,11 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         'isCurrentMonth': true,
       });
     }
-    
+
     // Aggiungi giorni del mese successivo per completare la griglia
     if (daysFromNextMonth < 7) {
       final nextMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
-      
+
       for (int day = 1; day <= daysFromNextMonth; day++) {
         calendarDays.add({
           'date': DateTime(nextMonth.year, nextMonth.month, day),
@@ -259,11 +281,12 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         });
       }
     }
-    
+
     return calendarDays;
   }
 
-  Color? _getDayBackgroundColor(bool isToday, bool hasEntries, bool isCurrentMonth) {
+  Color? _getDayBackgroundColor(
+      bool isToday, bool hasEntries, bool isCurrentMonth) {
     if (isToday) return Colors.blue;
     if (hasEntries && isCurrentMonth) return Colors.green[100];
     if (!isCurrentMonth) return Colors.grey[50];
@@ -279,39 +302,44 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
   bool _isItalianHoliday(DateTime date) {
     // Weekend
-    if (date.weekday == 6 || date.weekday == 7) return true; // Sabato e Domenica
-    
+    if (date.weekday == 6 || date.weekday == 7)
+      return true; // Sabato e Domenica
+
     // Feste fisse
     final fixedHolidays = [
-      DateTime(date.year, 1, 1),   // Capodanno
-      DateTime(date.year, 1, 6),   // Epifania
-      DateTime(date.year, 4, 25),  // Festa della Liberazione
-      DateTime(date.year, 5, 1),   // Festa del Lavoro
-      DateTime(date.year, 6, 2),   // Festa della Repubblica
-      DateTime(date.year, 8, 15),  // Ferragosto
-      DateTime(date.year, 11, 1),  // Ognissanti
-      DateTime(date.year, 12, 8),  // Immacolata Concezione
+      DateTime(date.year, 1, 1), // Capodanno
+      DateTime(date.year, 1, 6), // Epifania
+      DateTime(date.year, 4, 25), // Festa della Liberazione
+      DateTime(date.year, 5, 1), // Festa del Lavoro
+      DateTime(date.year, 6, 2), // Festa della Repubblica
+      DateTime(date.year, 8, 15), // Ferragosto
+      DateTime(date.year, 11, 1), // Ognissanti
+      DateTime(date.year, 12, 8), // Immacolata Concezione
       DateTime(date.year, 12, 25), // Natale
       DateTime(date.year, 12, 26), // Santo Stefano
     ];
-    
+
     for (final holiday in fixedHolidays) {
-      if (date.year == holiday.year && 
-          date.month == holiday.month && 
+      if (date.year == holiday.year &&
+          date.month == holiday.month &&
           date.day == holiday.day) {
         return true;
       }
     }
-    
+
     // Pasqua e Lunedì dell'Angelo (date variabili)
     final easter = _calculateEaster(date.year);
     final easterMonday = easter.add(const Duration(days: 1));
-    
-    if ((date.year == easter.year && date.month == easter.month && date.day == easter.day) ||
-        (date.year == easterMonday.year && date.month == easterMonday.month && date.day == easterMonday.day)) {
+
+    if ((date.year == easter.year &&
+            date.month == easter.month &&
+            date.day == easter.day) ||
+        (date.year == easterMonday.year &&
+            date.month == easterMonday.month &&
+            date.day == easterMonday.day)) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -331,7 +359,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     final m = (a + 11 * h + 22 * l) ~/ 451;
     final month = (h + l - 7 * m + 114) ~/ 31;
     final day = ((h + l - 7 * m + 114) % 31) + 1;
-    
+
     return DateTime(year, month, day);
   }
 
@@ -339,18 +367,34 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
     });
+
+    // AGGIUNGI QUESTA RIGA:
+    widget.onMonthChanged?.call(_currentMonth);
   }
 
   void _nextMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
     });
+
+    // AGGIUNGI QUESTA RIGA:
+    widget.onMonthChanged?.call(_currentMonth);
   }
 
   String _getMonthYearString(DateTime date) {
     const months = [
-      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+      'Gennaio',
+      'Febbraio',
+      'Marzo',
+      'Aprile',
+      'Maggio',
+      'Giugno',
+      'Luglio',
+      'Agosto',
+      'Settembre',
+      'Ottobre',
+      'Novembre',
+      'Dicembre'
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
@@ -358,7 +402,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   bool _isToday(DateTime date) {
     final today = DateTime.now();
     return date.year == today.year &&
-           date.month == today.month &&
-           date.day == today.day;
+        date.month == today.month &&
+        date.day == today.day;
   }
 }

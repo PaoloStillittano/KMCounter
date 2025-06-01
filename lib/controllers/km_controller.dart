@@ -10,6 +10,8 @@ class KmController extends ChangeNotifier {
   }
   
   List<KmEntry> get entries => _entries;
+
+  get todayKm => null;
   
   Future<void> _loadEntries() async {
     _entries = DatabaseService.getAllKmEntries();
