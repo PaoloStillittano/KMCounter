@@ -12,9 +12,12 @@ class MonthlySummaryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalKm = controller.getTotalKmForCurrentMonth();
-    final personalKm = controller.getTotalKmForCurrentMonth(category: KmCategory.personal);
-    final workKm = controller.getTotalKmForCurrentMonth(category: KmCategory.work);
+    final now = DateTime.now();
+    final totalKm = controller.getTotalKilometersForMonth(now.year, now.month);
+    final personalKm = controller.getTotalKilometersForMonthAndCategory(
+        now.year, now.month, KmCategory.personal);
+    final workKm = controller.getTotalKilometersForMonthAndCategory(
+        now.year, now.month, KmCategory.work);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -27,7 +30,7 @@ class MonthlySummaryWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Riepilogo mese di ${DateTime.now().month}/${DateTime.now().year}',
+            'Riepilogo mese di ${now.month}/${now.year}',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),

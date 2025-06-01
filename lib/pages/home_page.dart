@@ -49,19 +49,21 @@ class _HomePageState extends State<HomePage> {
                 child: CalendarWidget(
                   controller: _controller,
                   onDateSelected: (date) {
-                    _controller.setSelectedDate(date);
+                    // Use a local variable instead of a controller property
+                    // that might not exist anymore
                     setState(() {
                       _showDetailCard = true;
+                      _selectedDate = date;
                     });
                   },
                 ),
               ),
               
               // Card dettaglio (quando selezionata una data)
-              if (_showDetailCard)
+              if (_showDetailCard && _selectedDate != null)
                 KmDetailCard(
                   controller: _controller,
-                  selectedDate: _controller.selectedDate,
+                  selectedDate: _selectedDate!,
                   onClose: () {
                     setState(() {
                       _showDetailCard = false;
@@ -74,4 +76,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+  
+  // Add this property to store the selected date
+  DateTime? _selectedDate;
 }
