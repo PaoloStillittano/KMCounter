@@ -194,7 +194,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                             flex: (workPercentage * 100).round(),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.8),
+                                color: Colors.orange.withAlpha(40),
                                 borderRadius: BorderRadius.only(
                                   bottomRight: Radius.circular(7),
                                   bottomLeft: personalKm <= 0
@@ -283,14 +283,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     }
 
     return calendarDays;
-  }
-
-  Color? _getDayBackgroundColor(
-      bool isToday, bool hasEntries, bool isCurrentMonth) {
-    if (isToday) return Colors.blue;
-    if (hasEntries && isCurrentMonth) return Colors.green[100];
-    if (!isCurrentMonth) return Colors.grey[50];
-    return null;
   }
 
   Color _getDayTextColor(bool isToday, bool isHoliday, bool isCurrentMonth) {
