@@ -20,6 +20,7 @@ class CalendarWidget extends StatefulWidget {
 }
 
 class _CalendarWidgetState extends State<CalendarWidget> {
+  // ignore: unused_field
   late PageController _pageController;
   late DateTime _currentMonth;
 
@@ -156,7 +157,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isToday ? Colors.blue.withAlpha(40) : null,
+                      color: isToday ? Colors.blue.withAlpha(90) : null,
                       borderRadius: BorderRadius.circular(7),
                     ),
                   ),
@@ -177,11 +178,11 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                             flex: (personalPercentage * 100).round(),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.8),
+                                color: Colors.green.withAlpha(10),
                                 borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(7),
+                                  bottomLeft: const Radius.circular(7),
                                   bottomRight: workKm <= 0
-                                      ? Radius.circular(7)
+                                      ? const Radius.circular(7)
                                       : Radius.zero,
                                 ),
                               ),
@@ -196,9 +197,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                               decoration: BoxDecoration(
                                 color: Colors.orange.withAlpha(40),
                                 borderRadius: BorderRadius.only(
-                                  bottomRight: Radius.circular(7),
+                                  bottomRight: const Radius.circular(7),
                                   bottomLeft: personalKm <= 0
-                                      ? Radius.circular(7)
+                                      ? const Radius.circular(7)
                                       : Radius.zero,
                                 ),
                               ),
@@ -294,8 +295,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
   bool _isItalianHoliday(DateTime date) {
     // Weekend
-    if (date.weekday == 6 || date.weekday == 7)
+    if (date.weekday == 6 || date.weekday == 7) {
       return true; // Sabato e Domenica
+    }
 
     // Feste fisse
     final fixedHolidays = [

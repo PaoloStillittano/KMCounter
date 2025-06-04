@@ -43,7 +43,7 @@ class MonthlySummaryCompact extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(15),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -72,7 +72,7 @@ class MonthlySummaryCompact extends StatelessWidget {
             gradient: LinearGradient(
               colors: [
                 Theme.of(context).primaryColor,
-                Theme.of(context).primaryColor.withOpacity(0.7),
+                Theme.of(context).primaryColor.withAlpha(120),
               ],
             ),
             borderRadius: BorderRadius.circular(8),
@@ -107,7 +107,7 @@ class MonthlySummaryCompact extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withAlpha(70),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -209,9 +209,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withAlpha(35),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.1)),
+        border: Border.all(color: color.withAlpha(80)),
       ),
       child: Row(
         children: [

@@ -27,7 +27,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
             end: Alignment.bottomRight,
             colors: [
               Theme.of(context).primaryColor,
-              Theme.of(context).primaryColor.withOpacity(0.8),
+              Theme.of(context).primaryColor.withAlpha(200),
             ],
           ),
         ),
@@ -47,7 +47,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withAlpha(35),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
@@ -96,7 +96,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           margin: const EdgeInsets.only(right: 8),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withAlpha(35),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -128,7 +128,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       icon: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withAlpha(35),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Icon(
