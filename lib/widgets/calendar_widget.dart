@@ -157,7 +157,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isToday ? Colors.blue.withAlpha(90) : null,
+                      color: isToday ? Colors.blue.withAlpha(190) : null,
                       borderRadius: BorderRadius.circular(7),
                     ),
                   ),
@@ -178,7 +178,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                             flex: (personalPercentage * 100).round(),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.green.withAlpha(10),
+                                color: Colors.green,
                                 borderRadius: BorderRadius.only(
                                   bottomLeft: const Radius.circular(7),
                                   bottomRight: workKm <= 0
@@ -195,7 +195,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                             flex: (workPercentage * 100).round(),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.orange.withAlpha(40),
+                                color: Colors.orange,
                                 borderRadius: BorderRadius.only(
                                   bottomRight: const Radius.circular(7),
                                   bottomLeft: personalKm <= 0

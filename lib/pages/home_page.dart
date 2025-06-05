@@ -8,7 +8,7 @@ import '../widgets/km_detail_card.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-  
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -58,11 +58,37 @@ class _HomePageState extends State<HomePage> {
         controller: _controller,
         currentMonth: _currentMonth,
       ),
-      body: ListenableBuilder(
-        listenable: _controller,
-        builder: (context, child) {
-          return _buildMobileLayout();
-        },
+      body: Stack(
+        children: [
+          ListenableBuilder(
+            listenable: _controller,
+            builder: (context, child) {
+              return _buildMobileLayout();
+            },
+          ),
+          if (_showDetailCard && _selectedDate != null)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _onDetailCardClose,
+                child: Container(
+                  color: Colors.black.withAlpha(40),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width * 0.05,
+                      vertical: MediaQuery.of(context).size.height * 0.1,
+                    ),
+                    child: Center(
+                      child: KmDetailCard(
+                        controller: _controller,
+                        selectedDate: _selectedDate!,
+                        onClose: _onDetailCardClose,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -72,9 +98,8 @@ class _HomePageState extends State<HomePage> {
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight;
         final summaryHeight = _calculateSummaryHeight();
-        final detailCardHeight = _showDetailCard ? 200.0 : 0.0;
-        final calendarHeight = availableHeight - summaryHeight - detailCardHeight - 16;
-        
+        final calendarHeight = availableHeight - summaryHeight - 16;
+
         return SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: availableHeight),
@@ -84,7 +109,6 @@ class _HomePageState extends State<HomePage> {
                   controller: _controller,
                   currentMonth: _currentMonth,
                 ),
-                
                 SizedBox(
                   height: calendarHeight.clamp(300.0, double.infinity),
                   child: CalendarWidget(
@@ -93,16 +117,6 @@ class _HomePageState extends State<HomePage> {
                     onMonthChanged: _onMonthChanged,
                   ),
                 ),
-                
-                if (_showDetailCard && _selectedDate != null)
-                  Container(
-                    margin: const EdgeInsets.all(16),
-                    child: KmDetailCard(
-                      controller: _controller,
-                      selectedDate: _selectedDate!,
-                      onClose: _onDetailCardClose,
-                    ),
-                  ),
               ],
             ),
           ),
@@ -113,8 +127,8 @@ class _HomePageState extends State<HomePage> {
 
   double _calculateSummaryHeight() {
     final totalKm = _controller.getTotalKilometersForMonth(
-      _currentMonth.year, 
-      _currentMonth.month
+      _currentMonth.year,
+      _currentMonth.month,
     );
     return totalKm > 0 ? 140.0 : 120.0;
   }

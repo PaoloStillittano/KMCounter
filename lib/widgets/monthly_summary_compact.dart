@@ -43,7 +43,7 @@ class MonthlySummaryCompact extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(15),
+            color: Colors.black.withAlpha(35),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
