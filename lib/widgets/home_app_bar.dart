@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../controllers/km_controller.dart';
+import '../services/export_service.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final KmController controller;
@@ -343,7 +344,12 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   void _exportData(BuildContext context) {
-    // Implementa logica di esportazione
+    ExportService.exportMonthlyDataToCsv(
+      context: context,
+      entries: controller.entries,
+      year: currentMonth.year,
+      month: currentMonth.month,
+    );
   }
 
   void _navigateToStats(BuildContext context) {

@@ -24,7 +24,7 @@ class _KmDetailCardState extends State<KmDetailCard>
   late Animation<double> _slideAnimation;
   
   List<KmEntry> _entries = [];
-  bool _isAddingNew = false;
+  final bool _isAddingNew = false;
 
   @override
   void initState() {
