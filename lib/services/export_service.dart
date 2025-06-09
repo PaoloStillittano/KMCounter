@@ -1,15 +1,17 @@
 // services/export_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:excel/excel.dart' hide Border;
 import '../models/km_entry.dart';
 
 class ExportService {
-  static Future<void> exportMonthlyDataToCsv({
+  static Future<void> exportMonthlyDataToExcel({
     required BuildContext context,
     required List<KmEntry> entries,
     required int year,
@@ -27,7 +29,7 @@ class ExportService {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text('Generazione file CSV...', style: TextStyle(fontSize: 16)),
+              Text('Generazione file Excel...', style: TextStyle(fontSize: 16)),
             ],
           ),
         ),
@@ -47,12 +49,12 @@ class ExportService {
       // Ordina per data
       monthlyEntries.sort((a, b) => a.date.compareTo(b.date));
 
-      // Genera il contenuto CSV
-      final csvContent = _generateCsvContent(monthlyEntries, year, month);
+      // Genera il file Excel
+      final excel = await _generateExcelFile(monthlyEntries, year, month);
       
       // Crea il file
-      final fileName = 'Kilometri_${_getMonthName(month)}_$year.csv';
-      final file = await _createCsvFile(csvContent, fileName);
+      final fileName = 'Kilometri_${_getMonthName(month)}_$year.xlsx';
+      final file = await _createExcelFile(excel, fileName);
 
       Navigator.pop(context); // Chiudi loading
 
@@ -65,40 +67,62 @@ class ExportService {
     }
   }
 
-  static String _generateCsvContent(List<KmEntry> entries, int year, int month) {
-    final buffer = StringBuffer();
+  static Future<Excel> _generateExcelFile(List<KmEntry> entries, int year, int month) async {
+    final excel = Excel.createExcel();
     
-    // BOM per UTF-8 (migliora compatibilità Excel)
-    buffer.write('\uFEFF');
+    // Rimuovi il foglio di default
+    excel.delete('Sheet1');
     
-    // TITOLO DEL REPORT
+    // Crea i fogli di lavoro
+    final dashboardSheet = excel['Dashboard'];
+    final dataSheet = excel['Dati Viaggi'];
+    final statsSheet = excel['Statistiche'];
+    
+    await _createDashboardSheet(dashboardSheet, entries, year, month);
+    await _createDataSheet(dataSheet, entries, year, month);
+    await _createStatsSheet(statsSheet, entries, year, month);
+    
+    return excel;
+  }
+
+  static Future<void> _createDashboardSheet(Sheet sheet, List<KmEntry> entries, int year, int month) async {
     final monthName = _getMonthName(month);
-    buffer.writeln('REPORT CHILOMETRI - $monthName $year');
-    buffer.writeln('Generato il: ${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year} alle ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}');
-    buffer.writeln('');
     
-    // SEZIONE DATI PRINCIPALI
-    buffer.writeln('DATI VIAGGI');
-    buffer.writeln('Data,Chilometri,Categoria,Giorno');
+    // Stili
+    final titleStyle = CellStyle(
+      fontSize: 18,
+      fontFamily: getFontFamily(FontFamily.Calibri),
+      bold: true,
+      horizontalAlign: HorizontalAlign.Center,
+      backgroundColorHex: ExcelColor.blue,
+      fontColorHex: ExcelColor.white,
+    );
     
-    // Dati dei viaggi
-    for (final entry in entries) {
-      final dateStr = '${entry.date.day.toString().padLeft(2, '0')}/${entry.date.month.toString().padLeft(2, '0')}/${entry.date.year}';
-      final kmStr = entry.kilometers.toStringAsFixed(1);
-      final categoryStr = entry.category.displayName;
-      final dayOfWeek = _getDayOfWeekName(entry.date.weekday);
-      
-      buffer.writeln('$dateStr,$kmStr,$categoryStr,$dayOfWeek');
-    }
+    final headerStyle = CellStyle(
+      fontSize: 12,
+      bold: true,
+      backgroundColorHex: ExcelColor.lightBlue,
+      horizontalAlign: HorizontalAlign.Center,
+    );
     
-    // Separatore visivo
-    buffer.writeln('');
-    buffer.writeln('');
-    
-    // SEZIONE STATISTICHE GENERALI
-    buffer.writeln('STATISTICHE GENERALI');
-    buffer.writeln('Descrizione,Valore,Unità');
-    
+    final dataStyle = CellStyle(
+      fontSize: 11,
+      horizontalAlign: HorizontalAlign.Center,
+    );
+
+    // Titolo principale
+    var cell = sheet.cell(CellIndex.indexByString('A1'));
+    cell.value = TextCellValue('REPORT CHILOMETRI - $monthName $year');
+    cell.cellStyle = titleStyle;
+    sheet.merge(CellIndex.indexByString('A1'), CellIndex.indexByString('F1'));
+
+    // Data generazione
+    cell = sheet.cell(CellIndex.indexByString('A2'));
+    cell.value = TextCellValue('Generato il: ${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year} alle ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}');
+    cell.cellStyle = dataStyle;
+    sheet.merge(CellIndex.indexByString('A2'), CellIndex.indexByString('F2'));
+
+    // Calcoli
     final totalKm = entries.fold(0.0, (sum, entry) => sum + entry.kilometers);
     final personalKm = entries
         .where((e) => e.category == KmCategory.personal)
@@ -110,33 +134,162 @@ class ExportService {
     final daysInMonth = DateTime(year, month + 1, 0).day;
     final avgDaily = totalKm / daysInMonth;
     final daysWithTrips = entries.map((e) => e.date.day).toSet().length;
-    
-    buffer.writeln('Totale Chilometri,${totalKm.toStringAsFixed(1)},km');
-    buffer.writeln('Numero Viaggi,${entries.length},viaggi');
-    buffer.writeln('Giorni con Viaggi,$daysWithTrips,giorni');
-    buffer.writeln('Media per Viaggio,${entries.isNotEmpty ? (totalKm / entries.length).toStringAsFixed(1) : "0.0"},km');
-    buffer.writeln('Media Giornaliera,${avgDaily.toStringAsFixed(1)},km');
-    buffer.writeln('');
-    
-    // SEZIONE SUDDIVISIONE PER CATEGORIA
-    buffer.writeln('SUDDIVISIONE PER CATEGORIA');
-    buffer.writeln('Categoria,Chilometri,Viaggi,Percentuale');
-    
+
+    // Sezione riassunto
+    int row = 4;
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+    cell.value = TextCellValue('RIASSUNTO MENSILE');
+    cell.cellStyle = headerStyle;
+    sheet.merge(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row), 
+               CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row));
+
+    row++;
+    _addKeyValueRow(sheet, row++, 'Totale Chilometri:', '${totalKm.toStringAsFixed(1)} km');
+    _addKeyValueRow(sheet, row++, 'Numero Viaggi:', '${entries.length}');
+    _addKeyValueRow(sheet, row++, 'Giorni con Viaggi:', '$daysWithTrips di $daysInMonth');
+    _addKeyValueRow(sheet, row++, 'Media per Viaggio:', '${entries.isNotEmpty ? (totalKm / entries.length).toStringAsFixed(1) : "0.0"} km');
+    _addKeyValueRow(sheet, row++, 'Media Giornaliera:', '${avgDaily.toStringAsFixed(1)} km');
+
+    // Sezione categorie
+    row += 2;
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+    cell.value = TextCellValue('SUDDIVISIONE PER CATEGORIA');
+    cell.cellStyle = headerStyle;
+    sheet.merge(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row), 
+               CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row));
+
+    row++;
     if (totalKm > 0) {
       final personalTrips = entries.where((e) => e.category == KmCategory.personal).length;
       final workTrips = entries.where((e) => e.category == KmCategory.work).length;
       final personalPerc = (personalKm / totalKm * 100);
       final workPerc = (workKm / totalKm * 100);
       
-      buffer.writeln('Personale,${personalKm.toStringAsFixed(1)},$personalTrips,${personalPerc.toStringAsFixed(1)}%');
-      buffer.writeln('Lavoro,${workKm.toStringAsFixed(1)},$workTrips,${workPerc.toStringAsFixed(1)}%');
+      _addKeyValueRow(sheet, row++, 'Personale:', '${personalKm.toStringAsFixed(1)} km (${personalPerc.toStringAsFixed(1)}%) - $personalTrips viaggi');
+      _addKeyValueRow(sheet, row++, 'Lavoro:', '${workKm.toStringAsFixed(1)} km (${workPerc.toStringAsFixed(1)}%) - $workTrips viaggi');
     }
-    buffer.writeln('');
+
+    // Record del mese
+    if (entries.isNotEmpty) {
+      row += 2;
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+      cell.value = TextCellValue('RECORD DEL MESE');
+      cell.cellStyle = headerStyle;
+      sheet.merge(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row), 
+                 CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row));
+
+      row++;
+      final maxKmEntry = entries.reduce((a, b) => a.kilometers > b.kilometers ? a : b);
+      final minKmEntry = entries.reduce((a, b) => a.kilometers < b.kilometers ? a : b);
+      
+      _addKeyValueRow(sheet, row++, 'Viaggio più lungo:', '${maxKmEntry.kilometers.toStringAsFixed(1)} km (${maxKmEntry.date.day}/${maxKmEntry.date.month})');
+      _addKeyValueRow(sheet, row++, 'Viaggio più corto:', '${minKmEntry.kilometers.toStringAsFixed(1)} km (${minKmEntry.date.day}/${minKmEntry.date.month})');
+      
+      // Trova il giorno con più km
+      final dailyTotals = <String, double>{};
+      for (final entry in entries) {
+        final dateKey = '${entry.date.day}/${entry.date.month}';
+        dailyTotals[dateKey] = (dailyTotals[dateKey] ?? 0) + entry.kilometers;
+      }
+      
+      if (dailyTotals.isNotEmpty) {
+        final maxDayEntry = dailyTotals.entries.reduce((a, b) => a.value > b.value ? a : b);
+        _addKeyValueRow(sheet, row++, 'Giorno con più km:', '${maxDayEntry.value.toStringAsFixed(1)} km (${maxDayEntry.key})');
+      }
+    }
+
+    // Imposta larghezza colonne
+    sheet.setColumnWidth(0, 25);
+    sheet.setColumnWidth(1, 30);
+    sheet.setColumnWidth(2, 15);
+    sheet.setColumnWidth(3, 15);
+  }
+
+  static Future<void> _createDataSheet(Sheet sheet, List<KmEntry> entries, int year, int month) async {
+    final headerStyle = CellStyle(
+      fontSize: 12,
+      bold: true,
+      backgroundColorHex: ExcelColor.lightGreen,
+      horizontalAlign: HorizontalAlign.Center,
+    );
     
-    // SEZIONE ANALISI SETTIMANALE
-    buffer.writeln('ANALISI PER GIORNO DELLA SETTIMANA');
-    buffer.writeln('Giorno,Viaggi,Chilometri,Media');
+    final dataStyle = CellStyle(
+      fontSize: 11,
+      horizontalAlign: HorizontalAlign.Center,
+    );
+
+    // Headers
+    final headers = ['Data', 'Chilometri', 'Categoria', 'Giorno della Settimana'];
+    for (int i = 0; i < headers.length; i++) {
+      final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+      cell.value = TextCellValue(headers[i]);
+      cell.cellStyle = headerStyle;
+    }
+
+    // Dati
+    for (int i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      final row = i + 1;
+      
+      // Data
+      var cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+      cell.value = TextCellValue('${entry.date.day.toString().padLeft(2, '0')}/${entry.date.month.toString().padLeft(2, '0')}/${entry.date.year}');
+      cell.cellStyle = dataStyle;
+      
+      // Chilometri
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row));
+      cell.value = DoubleCellValue(entry.kilometers);
+      cell.cellStyle = dataStyle;
+      
+      // Categoria
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row));
+      cell.value = TextCellValue(entry.category.displayName);
+      cell.cellStyle = dataStyle;
+      
+      // Giorno
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row));
+      cell.value = TextCellValue(_getDayOfWeekName(entry.date.weekday));
+      cell.cellStyle = dataStyle;
+    }
+
+    // Imposta larghezza colonne
+    sheet.setColumnWidth(0, 15);
+    sheet.setColumnWidth(1, 12);
+    sheet.setColumnWidth(2, 15);
+    sheet.setColumnWidth(3, 20);
+  }
+
+  static Future<void> _createStatsSheet(Sheet sheet, List<KmEntry> entries, int year, int month) async {
+    final headerStyle = CellStyle(
+      fontSize: 12,
+      bold: true,
+      backgroundColorHex: ExcelColor.yellow,
+      horizontalAlign: HorizontalAlign.Center,
+    );
     
+    final dataStyle = CellStyle(
+      fontSize: 11,
+      horizontalAlign: HorizontalAlign.Center,
+    );
+
+    int row = 0;
+
+    // Analisi per giorno della settimana
+    var cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+    cell.value = TextCellValue('ANALISI PER GIORNO DELLA SETTIMANA');
+    cell.cellStyle = headerStyle;
+    sheet.merge(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row), 
+               CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row));
+    
+    row++;
+    final weekHeaders = ['Giorno', 'Viaggi', 'Chilometri', 'Media'];
+    for (int i = 0; i < weekHeaders.length; i++) {
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: row));
+      cell.value = TextCellValue(weekHeaders[i]);
+      cell.cellStyle = headerStyle;
+    }
+    row++;
+
     final weekdayData = <int, List<KmEntry>>{};
     for (final entry in entries) {
       weekdayData.putIfAbsent(entry.date.weekday, () => []).add(entry);
@@ -146,16 +299,44 @@ class ExportService {
       final dayEntries = weekdayData[i] ?? [];
       final dayName = _getDayOfWeekName(i);
       final dayKm = dayEntries.fold(0.0, (sum, entry) => sum + entry.kilometers);
-      final avgKm = dayEntries.isNotEmpty ? (dayKm / dayEntries.length).toStringAsFixed(1) : '0.0';
+      final avgKm = dayEntries.isNotEmpty ? (dayKm / dayEntries.length) : 0.0;
       
-      buffer.writeln('$dayName,${dayEntries.length},${dayKm.toStringAsFixed(1)},$avgKm');
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+      cell.value = TextCellValue(dayName);
+      cell.cellStyle = dataStyle;
+      
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row));
+      cell.value = IntCellValue(dayEntries.length);
+      cell.cellStyle = dataStyle;
+      
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row));
+      cell.value = DoubleCellValue(dayKm);
+      cell.cellStyle = dataStyle;
+      
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row));
+      cell.value = DoubleCellValue(avgKm);
+      cell.cellStyle = dataStyle;
+      
+      row++;
     }
-    buffer.writeln('');
+
+    // Analisi settimanale
+    row += 2;
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+    cell.value = TextCellValue('ANALISI PER SETTIMANE DEL MESE');
+    cell.cellStyle = headerStyle;
+    sheet.merge(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row), 
+               CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row));
     
-    // SEZIONE ANALISI SETTIMANALE (per settimane del mese)
-    buffer.writeln('ANALISI PER SETTIMANE DEL MESE');
-    buffer.writeln('Settimana,Periodo,Viaggi,Chilometri');
-    
+    row++;
+    final weeklyHeaders = ['Settimana', 'Periodo', 'Viaggi', 'Chilometri'];
+    for (int i = 0; i < weeklyHeaders.length; i++) {
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: row));
+      cell.value = TextCellValue(weeklyHeaders[i]);
+      cell.cellStyle = headerStyle;
+    }
+    row++;
+
     final weeklyData = <int, List<KmEntry>>{};
     for (final entry in entries) {
       final weekOfMonth = ((entry.date.day - 1) ~/ 7) + 1;
@@ -167,59 +348,56 @@ class ExportService {
       final startDay = weekEntries.first.date.day;
       final endDay = weekEntries.last.date.day;
       final weekKm = weekEntries.fold(0.0, (sum, entry) => sum + entry.kilometers);
+      final monthName = _getMonthName(month);
       
-      buffer.writeln('Settimana $week,$startDay-$endDay $monthName,${weekEntries.length},${weekKm.toStringAsFixed(1)}');
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+      cell.value = TextCellValue('Settimana $week');
+      cell.cellStyle = dataStyle;
+      
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row));
+      cell.value = TextCellValue('$startDay-$endDay $monthName');
+      cell.cellStyle = dataStyle;
+      
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row));
+      cell.value = IntCellValue(weekEntries.length);
+      cell.cellStyle = dataStyle;
+      
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row));
+      cell.value = DoubleCellValue(weekKm);
+      cell.cellStyle = dataStyle;
+      
+      row++;
     });
-    buffer.writeln('');
-    
-    // SEZIONE RECORD
-    if (entries.isNotEmpty) {
-      buffer.writeln('RECORD DEL MESE');
-      buffer.writeln('Descrizione,Valore,Data');
-      
-      final maxKmEntry = entries.reduce((a, b) => a.kilometers > b.kilometers ? a : b);
-      final minKmEntry = entries.reduce((a, b) => a.kilometers < b.kilometers ? a : b);
-      
-      buffer.writeln('Viaggio più lungo,${maxKmEntry.kilometers.toStringAsFixed(1)} km,${maxKmEntry.date.day}/${maxKmEntry.date.month}/${maxKmEntry.date.year}');
-      buffer.writeln('Viaggio più corto,${minKmEntry.kilometers.toStringAsFixed(1)} km,${minKmEntry.date.day}/${minKmEntry.date.month}/${minKmEntry.date.year}');
-      
-      // Trova il giorno con più km
-      final dailyTotals = <String, double>{};
-      for (final entry in entries) {
-        final dateKey = '${entry.date.day}/${entry.date.month}/${entry.date.year}';
-        dailyTotals[dateKey] = (dailyTotals[dateKey] ?? 0) + entry.kilometers;
-      }
-      
-      if (dailyTotals.isNotEmpty) {
-        final maxDayEntry = dailyTotals.entries.reduce((a, b) => a.value > b.value ? a : b);
-        buffer.writeln('Giorno con più km,${maxDayEntry.value.toStringAsFixed(1)} km,${maxDayEntry.key}');
-      }
-      
-      buffer.writeln('');
-    }
-    
-    // INFORMAZIONI TECNICHE
-    buffer.writeln('INFORMAZIONI FILE');
-    buffer.writeln('Campo,Valore');
-    buffer.writeln('Applicazione,Daily Counter');
-    buffer.writeln('Versione formato,CSV 1.0');
-    buffer.writeln('Encoding,UTF-8');
-    buffer.writeln('Separatore,Virgola');
-    
-    return buffer.toString();
+
+    // Imposta larghezza colonne
+    sheet.setColumnWidth(0, 20);
+    sheet.setColumnWidth(1, 20);
+    sheet.setColumnWidth(2, 12);
+    sheet.setColumnWidth(3, 15);
   }
 
-  // Funzione per escape dei campi CSV
-  static String _escapeCSVField(String field) {
-    // Se il campo contiene virgole, virgolette o newline, deve essere racchiuso tra virgolette
-    if (field.contains(',') || field.contains('"') || field.contains('\n') || field.contains('\r')) {
-      // Doppia le virgolette interne
-      return field.replaceAll('"', '""');
-    }
-    return field;
+  static void _addKeyValueRow(Sheet sheet, int row, String key, String value) {
+    final keyStyle = CellStyle(
+      fontSize: 11,
+      bold: true,
+      horizontalAlign: HorizontalAlign.Left,
+    );
+    
+    final valueStyle = CellStyle(
+      fontSize: 11,
+      horizontalAlign: HorizontalAlign.Left,
+    );
+
+    var cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row));
+    cell.value = TextCellValue(key);
+    cell.cellStyle = keyStyle;
+    
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row));
+    cell.value = TextCellValue(value);
+    cell.cellStyle = valueStyle;
   }
 
-  static Future<File> _createCsvFile(String content, String fileName) async {
+  static Future<File> _createExcelFile(Excel excel, String fileName) async {
     // Ottieni la directory di download
     Directory? directory;
     
@@ -243,8 +421,11 @@ class ExportService {
     
     final file = File('${directory!.path}/$fileName');
     
-    // Scrivi con encoding UTF-8 e BOM per Excel
-    await file.writeAsString(content, encoding: const Utf8Codec());
+    // Salva il file Excel
+    final List<int>? fileBytes = excel.save();
+    if (fileBytes != null) {
+      await file.writeAsBytes(fileBytes);
+    }
     
     return file;
   }
@@ -285,7 +466,7 @@ class ExportService {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'File CSV creato con successo e ottimizzato per Excel!',
+                'File Excel creato con successo!',
                 style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 16),
@@ -301,7 +482,7 @@ class ExportService {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.description, color: Colors.blue, size: 20),
+                        const Icon(Icons.description, color: Colors.green, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -359,7 +540,7 @@ class ExportService {
                       children: [
                         Icon(Icons.table_chart, color: Colors.green, size: 18),
                         SizedBox(width: 8),
-                        Text('Compatibile con Excel'),
+                        Text('File Excel nativo'),
                       ],
                     ),
                   ],
@@ -379,7 +560,7 @@ class ExportService {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Il file include statistiche dettagliate e formattazione ottimizzata per Excel',
+                        'Il file include 3 fogli: Dashboard, Dati Viaggi e Statistiche dettagliate',
                         style: TextStyle(fontSize: 13, color: Colors.blue),
                       ),
                     ),
@@ -419,16 +600,14 @@ class ExportService {
 
   static Future<void> _shareFile(File file, BuildContext context) async {
     try {
-      // Verifica che il file esista
       if (!await file.exists()) {
         _showMessage(context, 'File non trovato', isError: true);
         return;
       }
 
-      // Usa shareXFiles per condividere il file
       final result = await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'Dati chilometrici esportati da Daily Counter\n\n📊 File ottimizzato per Excel\n📅 ${_getMonthName(DateTime.now().month)} ${DateTime.now().year}',
+        text: 'Dati chilometrici esportati da Daily Counter\n\n📊 File Excel con 3 fogli di lavoro\n📅 ${_getMonthName(DateTime.now().month)} ${DateTime.now().year}',
         subject: 'Export Chilometri - ${file.path.split('/').last}',
         sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
       );
@@ -441,7 +620,6 @@ class ExportService {
     } catch (e) {
       debugPrint('Errore nella condivisione: $e');
       _showMessage(context, 'Errore nella condivisione. Percorso copiato negli appunti.', isError: true);
-      // Fallback: copia il percorso negli appunti
       await _copyPathToClipboard(file);
     }
   }
@@ -507,12 +685,11 @@ class ExportService {
     if (Platform.isAndroid) {
       final status = await Permission.storage.request();
       if (!status.isGranted) {
-        // Prova con i permessi più specifici per Android 11+
         final manageStatus = await Permission.manageExternalStorage.request();
         return manageStatus.isGranted;
       }
       return status.isGranted;
     }
-    return true; // iOS non ha bisogno di permessi per l'app directory
+    return true;
   }
 }

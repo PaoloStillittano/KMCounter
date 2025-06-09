@@ -344,7 +344,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   void _exportData(BuildContext context) {
-    ExportService.exportMonthlyDataToCsv(
+    ExportService.exportMonthlyDataToExcel(
       context: context,
       entries: controller.entries,
       year: currentMonth.year,
