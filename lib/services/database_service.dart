@@ -6,15 +6,12 @@ class DatabaseService {
   static const String kmEntriesBoxName = 'km_entries';
   
   static Future<void> initialize() async {
-    // Initialize Hive
     final appDocumentDir = await getApplicationDocumentsDirectory();
     await Hive.initFlutter(appDocumentDir.path);
     
-    // Register adapters
     Hive.registerAdapter(KmCategoryAdapter());
     Hive.registerAdapter(KmEntryAdapter());
     
-    // Open boxes
     await Hive.openBox<KmEntry>(kmEntriesBoxName);
   }
   

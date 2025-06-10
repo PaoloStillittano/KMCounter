@@ -6,13 +6,13 @@ import '../controllers/km_controller.dart';
 class CalendarWidget extends StatefulWidget {
   final KmController controller;
   final Function(DateTime) onDateSelected;
-  final Function(DateTime)? onMonthChanged; // NUOVO PARAMETRO
+  final Function(DateTime)? onMonthChanged; 
 
   const CalendarWidget({
     super.key,
     required this.controller,
     required this.onDateSelected,
-    this.onMonthChanged, // NUOVO PARAMETRO OPZIONALE
+    this.onMonthChanged, 
   });
 
   @override
@@ -30,7 +30,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     _currentMonth = DateTime.now();
     _pageController = PageController();
 
-    // AGGIUNGI QUESTA RIGA per notificare il mese iniziale:
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onMonthChanged?.call(_currentMonth);
     });
@@ -121,7 +120,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         final isToday = _isToday(date);
         final isHoliday = _isItalianHoliday(date);
 
-        // Calculate category proportions
         double totalKm = 0;
         double personalKm = 0;
         double workKm = 0;
@@ -137,7 +135,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
           }
         }
 
-        // Calculate percentages
         final personalPercentage = totalKm > 0 ? personalKm / totalKm : 0.0;
         final workPercentage = totalKm > 0 ? workKm / totalKm : 0.0;
 
@@ -169,7 +166,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    height: 8, // Fixed height for the color bar
+                    height: 8,
                     child: Row(
                       children: [
                         // Personal category (left portion)
@@ -209,7 +206,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
                     ),
                   ),
 
-                // Day number (on top of the colors)
+                // Day number 
                 Center(
                   child: Text(
                     '${date.day}',
@@ -237,17 +234,14 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     final lastDayOfMonth =
         DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
 
-    // Calcola i giorni del mese precedente da mostrare
-    final startingWeekday = firstDayOfMonth.weekday; // 1 = Lunedì, 7 = Domenica
+    final startingWeekday = firstDayOfMonth.weekday; 
     final daysFromPreviousMonth = startingWeekday - 1;
 
-    // Calcola i giorni del mese successivo da mostrare
     final endingWeekday = lastDayOfMonth.weekday;
     final daysFromNextMonth = 7 - endingWeekday;
 
     List<Map<String, dynamic>> calendarDays = [];
 
-    // Aggiungi giorni del mese precedente
     if (daysFromPreviousMonth > 0) {
       final previousMonth =
           DateTime(_currentMonth.year, _currentMonth.month - 1);
@@ -263,7 +257,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       }
     }
 
-    // Aggiungi giorni del mese corrente
     for (int day = 1; day <= lastDayOfMonth.day; day++) {
       calendarDays.add({
         'date': DateTime(_currentMonth.year, _currentMonth.month, day),
@@ -271,7 +264,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       });
     }
 
-    // Aggiungi giorni del mese successivo per completare la griglia
     if (daysFromNextMonth < 7) {
       final nextMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
 
@@ -296,7 +288,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   bool _isItalianHoliday(DateTime date) {
     // Weekend
     if (date.weekday == 6 || date.weekday == 7) {
-      return true; // Sabato e Domenica
+      return true; 
     }
 
     // Feste fisse
@@ -362,7 +354,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
     });
 
-    // AGGIUNGI QUESTA RIGA:
     widget.onMonthChanged?.call(_currentMonth);
   }
 
@@ -371,7 +362,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
     });
 
-    // AGGIUNGI QUESTA RIGA:
     widget.onMonthChanged?.call(_currentMonth);
   }
 

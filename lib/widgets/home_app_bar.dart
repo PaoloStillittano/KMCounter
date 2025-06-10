@@ -283,7 +283,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   void _handleMenuAction(BuildContext context, String action) {
-    // Aggiungi feedback tattile
     HapticFeedback.lightImpact();
     
     final messages = {
@@ -322,7 +321,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
     
-    // Qui puoi aggiungere la logica per navigare alle rispettive pagine
     switch (action) {
       case 'settings':
         _navigateToSettings(context);
