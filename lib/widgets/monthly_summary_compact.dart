@@ -1,65 +1,68 @@
 // widgets/monthly_summary_compact.dart
 import 'package:flutter/material.dart';
 import 'package:counter/models/km_entry.dart';
-import '../controllers/km_controller.dart';
+import 'package:provider/provider.dart';
+import 'package:counter/controllers/km_controller.dart';
 import '../utils/date_utils.dart' as my_date_utils;
 
 class MonthlySummaryCompact extends StatelessWidget {
-  final KmController controller;
   final DateTime currentMonth;
 
   const MonthlySummaryCompact({
     super.key,
-    required this.controller,
     required this.currentMonth,
   });
 
   @override
   Widget build(BuildContext context) {
-    final totalKm = controller.getTotalKilometersForMonth(
-      currentMonth.year, 
-      currentMonth.month,
-    );
-    final personalKm = controller.getTotalKilometersForMonthAndCategory(
-      currentMonth.year, 
-      currentMonth.month, 
-      KmCategory.personal,
-    );
-    final workKm = controller.getTotalKilometersForMonthAndCategory(
-      currentMonth.year, 
-      currentMonth.month, 
-      KmCategory.work,
-    );
+    return Consumer<KmController>(
+      builder: (context, controller, child) {
+        final totalKm = controller.getTotalKilometersForMonth(
+          currentMonth.year,
+          currentMonth.month,
+        );
+        final personalKm = controller.getTotalKilometersForMonthAndCategory(
+          currentMonth.year,
+          currentMonth.month,
+          KmCategory.personal,
+        );
+        final workKm = controller.getTotalKilometersForMonthAndCategory(
+          currentMonth.year,
+          currentMonth.month,
+          KmCategory.work,
+        );
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, Colors.grey[50]!],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(35),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        return Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.grey[50]!],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(35),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildHeader(context, totalKm),
-          const SizedBox(height: 12),
-          _buildStatsRow(personalKm, workKm),
-          if (totalKm > 0) ...[
-            const SizedBox(height: 12),
-            _buildProgressBar(personalKm, workKm, totalKm),
-          ],
-        ],
-      ),
+          child: Column(
+            children: [
+              _buildHeader(context, totalKm),
+              const SizedBox(height: 12),
+              _buildStatsRow(personalKm, workKm),
+              if (totalKm > 0) ...[
+                const SizedBox(height: 12),
+                _buildProgressBar(personalKm, workKm, totalKm),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -91,8 +94,8 @@ class MonthlySummaryCompact extends StatelessWidget {
               Text(
                 my_date_utils.DateUtils.getMonthYearString(currentMonth),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               Text(
                 'Riepilogo mensile',
@@ -148,7 +151,7 @@ class MonthlySummaryCompact extends StatelessWidget {
   Widget _buildProgressBar(double personalKm, double workKm, double totalKm) {
     final personalPercentage = personalKm / totalKm;
     final workPercentage = workKm / totalKm;
-    
+
     return Container(
       height: 4,
       decoration: BoxDecoration(
@@ -166,8 +169,10 @@ class MonthlySummaryCompact extends StatelessWidget {
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(2),
                     bottomLeft: const Radius.circular(2),
-                    topRight: workKm <= 0 ? const Radius.circular(2) : Radius.zero,
-                    bottomRight: workKm <= 0 ? const Radius.circular(2) : Radius.zero,
+                    topRight:
+                        workKm <= 0 ? const Radius.circular(2) : Radius.zero,
+                    bottomRight:
+                        workKm <= 0 ? const Radius.circular(2) : Radius.zero,
                   ),
                 ),
               ),
@@ -181,8 +186,12 @@ class MonthlySummaryCompact extends StatelessWidget {
                   borderRadius: BorderRadius.only(
                     topRight: const Radius.circular(2),
                     bottomRight: const Radius.circular(2),
-                    topLeft: personalKm <= 0 ? const Radius.circular(2) : Radius.zero,
-                    bottomLeft: personalKm <= 0 ? const Radius.circular(2) : Radius.zero,
+                    topLeft: personalKm <= 0
+                        ? const Radius.circular(2)
+                        : Radius.zero,
+                    bottomLeft: personalKm <= 0
+                        ? const Radius.circular(2)
+                        : Radius.zero,
                   ),
                 ),
               ),

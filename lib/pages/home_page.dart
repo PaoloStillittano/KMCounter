@@ -1,6 +1,7 @@
-// pages/home_page.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../controllers/km_controller.dart';
+import '../view_models/calendar_view_model.dart';
 import '../widgets/home_app_bar.dart';
 import '../widgets/monthly_summary_compact.dart';
 import '../widgets/calendar_widget.dart';
@@ -53,42 +54,44 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: HomeAppBar(
-        controller: _controller,
-        currentMonth: _currentMonth,
-      ),
-      body: Stack(
-        children: [
-          ListenableBuilder(
-            listenable: _controller,
-            builder: (context, child) {
-              return _buildMobileLayout();
-            },
-          ),
-          if (_showDetailCard && _selectedDate != null)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _onDetailCardClose,
-                child: Container(
-                  color: Colors.black.withAlpha(40),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: MediaQuery.of(context).size.width * 0.05,
-                      vertical: MediaQuery.of(context).size.height * 0.1,
-                    ),
-                    child: Center(
-                      child: KmDetailCard(
-                        controller: _controller,
-                        selectedDate: _selectedDate!,
-                        onClose: _onDetailCardClose,
+    return ChangeNotifierProvider.value(
+      value: _controller,
+      child: Scaffold(
+        appBar: HomeAppBar(
+          currentMonth: _currentMonth,
+        ),
+        body: Stack(
+          children: [
+            ListenableBuilder(
+              listenable: _controller,
+              builder: (context, child) {
+                return _buildMobileLayout();
+              },
+            ),
+            if (_showDetailCard && _selectedDate != null)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _onDetailCardClose,
+                  child: Container(
+                    color: Colors.black.withAlpha(40),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.of(context).size.width * 0.05,
+                        vertical: MediaQuery.of(context).size.height * 0.1,
+                      ),
+                      child: Center(
+                        child: KmDetailCard(
+                          controller: _controller,
+                          selectedDate: _selectedDate!,
+                          onClose: _onDetailCardClose,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -106,15 +109,18 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               children: [
                 MonthlySummaryCompact(
-                  controller: _controller,
                   currentMonth: _currentMonth,
                 ),
                 SizedBox(
                   height: calendarHeight.clamp(300.0, double.infinity),
-                  child: CalendarWidget(
-                    controller: _controller,
-                    onDateSelected: _onDateSelected,
-                    onMonthChanged: _onMonthChanged,
+                  child: ChangeNotifierProvider<CalendarViewModel>(
+                    create: (ctx) => CalendarViewModel(
+                      ctx.read<KmController>(),
+                    ),
+                    child: CalendarWidget(
+                      onDateSelected: _onDateSelected,
+                      onMonthChanged: _onMonthChanged,
+                    ),
                   ),
                 ),
               ],
@@ -126,10 +132,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   double _calculateSummaryHeight() {
-    final totalKm = _controller.getTotalKilometersForMonth(
-      _currentMonth.year,
-      _currentMonth.month,
-    );
+    final totalKm = context.read<KmController>().getTotalKilometersForMonth(
+          _currentMonth.year,
+          _currentMonth.month,
+        );
     return totalKm > 0 ? 140.0 : 120.0;
   }
 }

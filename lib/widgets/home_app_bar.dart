@@ -1,16 +1,15 @@
 // widgets/home_app_bar.dart
+import 'package:counter/controllers/km_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../controllers/km_controller.dart';
+import 'package:provider/provider.dart';
 import '../services/export_service.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final KmController controller;
   final DateTime currentMonth;
 
   const HomeAppBar({
     super.key,
-    required this.controller,
     required this.currentMonth,
   });
 
@@ -37,7 +36,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: _buildTitle(),
       actions: [
-        _buildMonthlyStats(context),
         _buildMenuButton(context),
         const SizedBox(width: 12),
       ],
@@ -93,57 +91,56 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildMonthlyStats(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, child) {
-        final monthlyTotal = controller.getTotalKilometersForMonth(
-          currentMonth.year, 
-          currentMonth.month,
-        );
-        
-        return Container(
-          margin: const EdgeInsets.only(right: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(38),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: Colors.white.withAlpha(51),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(51),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.calendar_today_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '${monthlyTotal.toStringAsFixed(0)}km',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  // Widget _buildMonthlyStats(BuildContext context) {
+  //   return Consumer<KmController>(
+  //     builder: (context, controller, child) {
+  //       final monthlyTotal = controller.getTotalKilometersForMonth(
+  //         currentMonth.year,
+  //         currentMonth.month,
+  //       );
+
+  //       return Container(
+  //         margin: const EdgeInsets.only(right: 12),
+  //         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+  //         decoration: BoxDecoration(
+  //           color: Colors.white.withAlpha(38),
+  //           borderRadius: BorderRadius.circular(22),
+  //           border: Border.all(
+  //             color: Colors.white.withAlpha(51),
+  //             width: 1,
+  //           ),
+  //         ),
+  //         child: Row(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             Container(
+  //               padding: const EdgeInsets.all(4),
+  //               decoration: BoxDecoration(
+  //                 color: Colors.white.withAlpha(51),
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               child: const Icon(
+  //                 Icons.calendar_today_rounded,
+  //                 color: Colors.white,
+  //                 size: 14,
+  //               ),
+  //             ),
+  //             const SizedBox(width: 6),
+  //             Text(
+  //               '${monthlyTotal.toStringAsFixed(0)}km',
+  //               style: const TextStyle(
+  //                 color: Colors.white,
+  //                 fontSize: 13,
+  //                 fontWeight: FontWeight.w600,
+  //                 letterSpacing: 0.2,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildMenuButton(BuildContext context) {
     return PopupMenuButton<String>(
@@ -284,7 +281,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   void _handleMenuAction(BuildContext context, String action) {
     HapticFeedback.lightImpact();
-    
+    final kmController = context.read<KmController>();
     final messages = {
       'settings': 'Apertura impostazioni...',
       'export': 'Esportazione dati in corso...',
@@ -326,7 +323,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         _navigateToSettings(context);
         break;
       case 'export':
-        _exportData(context);
+        _exportData(context, kmController);
         break;
       case 'stats':
         _navigateToStats(context);
@@ -341,7 +338,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     // Navigator.pushNamed(context, '/settings');
   }
 
-  void _exportData(BuildContext context) {
+  void _exportData(BuildContext context, KmController controller) {
     ExportService.exportMonthlyDataToExcel(
       context: context,
       entries: controller.entries,
