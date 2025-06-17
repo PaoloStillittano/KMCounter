@@ -1,8 +1,8 @@
 // widgets/monthly_summary_compact.dart
 import 'package:flutter/material.dart';
-import 'package:counter/models/km_entry.dart';
+import '../models/km_entry.dart';
 import 'package:provider/provider.dart';
-import 'package:counter/controllers/km_controller.dart';
+import '../controllers/km_controller.dart';
 import '../utils/date_utils.dart' as my_date_utils;
 
 class MonthlySummaryCompact extends StatelessWidget {

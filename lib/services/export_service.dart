@@ -1,6 +1,6 @@
 // services/export_service.dart
 import 'dart:io';
-import 'package:counter/utils/excel_sheet.dart';
+import '../utils/excel_sheet.dart';
 import 'package:flutter/material.dart' hide DateUtils;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -8,7 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:excel/excel.dart' hide Border;
 import '../models/km_entry.dart';
-import 'package:counter/utils/date_utils.dart';
+import '../utils/date_utils.dart';
 
 class ExportService {
   static Future<void> exportMonthlyDataToExcel({

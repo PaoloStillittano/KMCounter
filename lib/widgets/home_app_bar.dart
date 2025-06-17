@@ -1,5 +1,5 @@
 // widgets/home_app_bar.dart
-import 'package:counter/controllers/km_controller.dart';
+import '../controllers/km_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
