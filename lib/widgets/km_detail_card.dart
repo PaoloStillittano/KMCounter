@@ -25,7 +25,7 @@ class _KmDetailCardState extends State<KmDetailCard>
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
   late KmDetailLogic _logic;
-  
+
   List<KmEntry> _entries = [];
 
   @override
@@ -34,6 +34,8 @@ class _KmDetailCardState extends State<KmDetailCard>
     _setupAnimation();
     _initializeLogic();
     _loadEntries();
+
+    widget.controller.addListener(_onControllerChanged);
   }
 
   void _setupAnimation() {
@@ -66,10 +68,14 @@ class _KmDetailCardState extends State<KmDetailCard>
     });
   }
 
+  void _onControllerChanged() {
+    _loadEntries();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return AnimatedBuilder(
       animation: _slideAnimation,
       builder: (context, child) {
@@ -102,8 +108,7 @@ class _KmDetailCardState extends State<KmDetailCard>
                         _HeaderSection(logic: _logic, entries: _entries),
                         _ContentSection(
                           logic: _logic,
-                          entries: _entries,
-                          onRefresh: _loadEntries,
+                          entries: _entries
                         ),
                       ],
                     ),
@@ -119,6 +124,7 @@ class _KmDetailCardState extends State<KmDetailCard>
 
   @override
   void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
     _animationController.dispose();
     super.dispose();
   }
@@ -137,7 +143,7 @@ class _HeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -170,7 +176,8 @@ class _HeaderSection extends StatelessWidget {
                   Text(
                     '${entries.length} ${entries.length == 1 ? 'entry' : 'entries'}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer.withAlpha(180),
+                      color:
+                          theme.colorScheme.onPrimaryContainer.withAlpha(180),
                     ),
                   ),
               ],
@@ -194,12 +201,10 @@ class _HeaderSection extends StatelessWidget {
 class _ContentSection extends StatelessWidget {
   final KmDetailLogic logic;
   final List<KmEntry> entries;
-  final VoidCallback onRefresh;
 
   const _ContentSection({
     required this.logic,
     required this.entries,
-    required this.onRefresh,
   });
 
   @override
@@ -207,9 +212,9 @@ class _ContentSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       constraints: const BoxConstraints(maxHeight: 400),
-      child: entries.isEmpty 
-          ? _EmptyState(logic: logic, onRefresh: onRefresh)
-          : _EntriesList(logic: logic, entries: entries, onRefresh: onRefresh),
+      child: entries.isEmpty
+          ? _EmptyState(logic: logic)
+          : _EntriesList(logic: logic, entries: entries),
     );
   }
 }
@@ -217,17 +222,15 @@ class _ContentSection extends StatelessWidget {
 // Empty state component
 class _EmptyState extends StatelessWidget {
   final KmDetailLogic logic;
-  final VoidCallback onRefresh;
 
   const _EmptyState({
     required this.logic,
-    required this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Column(
       children: [
         Icon(
@@ -251,7 +254,7 @@ class _EmptyState extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        _AddButton(logic: logic, onRefresh: onRefresh, isEmpty: true),
+        _AddButton(logic: logic, isEmpty: true),
       ],
     );
   }
@@ -261,12 +264,10 @@ class _EmptyState extends StatelessWidget {
 class _EntriesList extends StatelessWidget {
   final KmDetailLogic logic;
   final List<KmEntry> entries;
-  final VoidCallback onRefresh;
 
   const _EntriesList({
     required this.logic,
     required this.entries,
-    required this.onRefresh,
   });
 
   @override
@@ -281,13 +282,12 @@ class _EntriesList extends StatelessWidget {
               child: _EntryCard(
                 logic: logic,
                 entry: entry,
-                index: index,
-                onRefresh: onRefresh,
+                index: index
               ),
             );
           }),
           const SizedBox(height: 16),
-          _AddButton(logic: logic, onRefresh: onRefresh, isEmpty: false),
+          _AddButton(logic: logic, isEmpty: false),
         ],
       ),
     );
@@ -299,29 +299,23 @@ class _EntryCard extends StatelessWidget {
   final KmDetailLogic logic;
   final KmEntry entry;
   final int index;
-  final VoidCallback onRefresh;
 
   const _EntryCard({
     required this.logic,
     required this.entry,
     required this.index,
-    required this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final categoryColor = logic.getCategoryColor(entry.category);
-    
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () => logic.showAddEditDialog(
-          entry: entry, 
-          index: index, 
-          onRefresh: onRefresh,
-        ),
+        onTap: () => logic.showAddEditDialog(entry: entry, index: index),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -362,7 +356,10 @@ class _EntryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _EntryPopupMenu(logic: logic, entry: entry, index: index, onRefresh: onRefresh),
+              _EntryPopupMenu(
+                  logic: logic,
+                  entry: entry,
+                  index: index),
             ],
           ),
         ),
@@ -376,25 +373,23 @@ class _EntryPopupMenu extends StatelessWidget {
   final KmDetailLogic logic;
   final KmEntry entry;
   final int index;
-  final VoidCallback onRefresh;
 
   const _EntryPopupMenu({
     required this.logic,
     required this.entry,
     required this.index,
-    required this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return PopupMenuButton<String>(
       onSelected: (value) {
         if (value == 'edit') {
-          logic.showAddEditDialog(entry: entry, index: index, onRefresh: onRefresh);
+          logic.showAddEditDialog(entry: entry, index: index);
         } else if (value == 'delete') {
-          logic.showDeleteConfirmationDialog(entry, onRefresh);
+          logic.showDeleteConfirmationDialog(entry);
         }
       },
       itemBuilder: (context) => [
@@ -430,12 +425,10 @@ class _EntryPopupMenu extends StatelessWidget {
 // Add button component
 class _AddButton extends StatelessWidget {
   final KmDetailLogic logic;
-  final VoidCallback onRefresh;
   final bool isEmpty;
 
   const _AddButton({
     required this.logic,
-    required this.onRefresh,
     required this.isEmpty,
   });
 
@@ -444,7 +437,7 @@ class _AddButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: () => logic.showAddEditDialog(onRefresh: onRefresh),
+        onPressed: () => logic.showAddEditDialog(),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -452,7 +445,8 @@ class _AddButton extends StatelessWidget {
           ),
         ),
         icon: const Icon(Icons.add),
-        label: Text(isEmpty ? 'Aggiungi primo viaggio' : 'Aggiungi nuovo viaggio'),
+        label:
+            Text(isEmpty ? 'Aggiungi primo viaggio' : 'Aggiungi nuovo viaggio'),
       ),
     );
   }

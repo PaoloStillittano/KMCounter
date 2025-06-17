@@ -33,6 +33,7 @@ class KmDetailLogic {
       await controller.addEntry(newEntry);
       _showSuccessMessage('Entry aggiunta con successo');
     }
+    // Non serve più chiamare onRefresh, il calendario si aggiornerà automaticamente
   }
 
   Future<void> deleteEntry(KmEntry entry) async {
@@ -41,10 +42,11 @@ class KmDetailLogic {
       await controller.deleteEntry(globalIndex);
       _showSuccessMessage('Entry eliminata');
     }
+    // Non serve più chiamare onRefresh, il calendario si aggiornerà automaticamente
   }
 
-  // Dialog management
-  void showAddEditDialog({KmEntry? entry, int? index, required VoidCallback onRefresh}) {
+  // Dialog management - versione semplificata senza onRefresh
+  void showAddEditDialog({KmEntry? entry, int? index}) {
     showDialog(
       context: context,
       builder: (context) => AddEditEntryDialog(
@@ -52,13 +54,12 @@ class KmDetailLogic {
         selectedDate: selectedDate,
         onSave: (newEntry) async {
           await addOrUpdateEntry(entry, newEntry);
-          onRefresh();
         },
       ),
-    ).then((_) => onRefresh());
+    );
   }
 
-  void showDeleteConfirmationDialog(KmEntry entry, VoidCallback onRefresh) {
+  void showDeleteConfirmationDialog(KmEntry entry) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -76,7 +77,6 @@ class KmDetailLogic {
             onPressed: () async {
               Navigator.of(context).pop();
               await deleteEntry(entry);
-              onRefresh();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Elimina'),
@@ -129,7 +129,7 @@ class KmDetailLogic {
   }
 }
 
-// Separate dialog component
+// Il dialog rimane uguale
 class AddEditEntryDialog extends StatefulWidget {
   final KmEntry? entry;
   final DateTime selectedDate;

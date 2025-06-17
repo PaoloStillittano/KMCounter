@@ -16,6 +16,27 @@ class CalendarViewModel extends ChangeNotifier {
   CalendarViewModel(this._kmController) {
     _currentMonth = DateTime.now();
     _generateCalendarDays();
+    
+    // Ascolta i cambiamenti nel controller
+    _kmController.addListener(_onKmControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    _kmController.removeListener(_onKmControllerChanged);
+    super.dispose();
+  }
+
+  // Callback chiamato quando il KmController cambia
+  void _onKmControllerChanged() {
+    _generateCalendarDays();
+    notifyListeners();
+  }
+
+  // Metodo pubblico per forzare l'aggiornamento (se necessario)
+  void refreshCalendar() {
+    _generateCalendarDays();
+    notifyListeners();
   }
 
   void onMonthChanged(Function(DateTime)? callback) {
