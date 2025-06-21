@@ -22,7 +22,8 @@ class ExportService {
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           content: const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -34,55 +35,58 @@ class ExportService {
         ),
       );
 
-      final monthlyEntries = entries.where((entry) =>
-        entry.date.year == year && entry.date.month == month
-      ).toList();
+      final monthlyEntries = entries
+          .where(
+              (entry) => entry.date.year == year && entry.date.month == month)
+          .toList();
 
       if (monthlyEntries.isEmpty) {
-        Navigator.pop(context); 
-        _showMessage(context, 'Nessun dato trovato per questo mese', isError: true);
+        Navigator.pop(context);
+        _showMessage(context, 'Nessun dato trovato per questo mese',
+            isError: true);
         return;
       }
 
       monthlyEntries.sort((a, b) => a.date.compareTo(b.date));
 
       final excel = await _generateExcelFile(monthlyEntries, year, month);
-      
+
       final fileName = 'Kilometri_${DateUtils.getMonthName(month)}_$year.xlsx';
       final file = await _createExcelFile(excel, fileName);
 
-      Navigator.pop(context); 
+      Navigator.pop(context);
 
       await _showExportSuccessDialog(context, file, monthlyEntries.length);
-
     } catch (e) {
       Navigator.pop(context);
-      _showMessage(context, 'Errore durante l\'esportazione: $e', isError: true);
+      _showMessage(context, 'Errore durante l\'esportazione: $e',
+          isError: true);
     }
   }
 
-  static Future<Excel> _generateExcelFile(List<KmEntry> entries, int year, int month) async {
+  static Future<Excel> _generateExcelFile(
+      List<KmEntry> entries, int year, int month) async {
     final excel = Excel.createExcel();
-    
-    excel.delete('Sheet1');
-    
+
     final dashboardSheet = excel['Dashboard'];
     final dataSheet = excel['Dati Viaggi'];
     final statsSheet = excel['Statistiche'];
-    
+
+    excel.delete('Sheet1');
+
     await createDashboardSheet(dashboardSheet, entries, year, month);
     await createDataSheet(dataSheet, entries, year, month);
     await createStatsSheet(statsSheet, entries, year, month);
-    
+
     return excel;
   }
 
   static Future<File> _createExcelFile(Excel excel, String fileName) async {
     Directory? directory;
-    
+
     if (Platform.isAndroid) {
       await _requestStoragePermission();
-      
+
       try {
         directory = Directory('/storage/emulated/0/Download');
         if (!await directory.exists()) {
@@ -94,20 +98,20 @@ class ExportService {
     } else {
       directory = await getApplicationDocumentsDirectory();
     }
-    
+
     final file = File('${directory!.path}/$fileName');
-    
+
     final List<int>? fileBytes = excel.save();
     if (fileBytes != null) {
       await file.writeAsBytes(fileBytes);
     }
-    
+
     return file;
   }
 
   static Future<void> _showExportSuccessDialog(
-    BuildContext context, 
-    File file, 
+    BuildContext context,
+    File file,
     int entriesCount,
   ) async {
     return showDialog(
@@ -157,7 +161,8 @@ class ExportService {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.description, color: Colors.green, size: 20),
+                        const Icon(Icons.description,
+                            color: Colors.green, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -173,7 +178,8 @@ class ExportService {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(Icons.analytics, color: Colors.orange, size: 18),
+                        const Icon(Icons.analytics,
+                            color: Colors.orange, size: 18),
                         const SizedBox(width: 8),
                         Text('$entriesCount viaggi esportati'),
                       ],
@@ -182,10 +188,12 @@ class ExportService {
                     FutureBuilder<int>(
                       future: file.length(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Row(
                             children: [
-                              Icon(Icons.hourglass_empty, color: Colors.grey, size: 18),
+                              Icon(Icons.hourglass_empty,
+                                  color: Colors.grey, size: 18),
                               SizedBox(width: 8),
                               Text('Calcolando dimensioni...'),
                             ],
@@ -193,16 +201,19 @@ class ExportService {
                         } else if (snapshot.hasError) {
                           return const Row(
                             children: [
-                              Icon(Icons.error_outline, color: Colors.red, size: 18),
+                              Icon(Icons.error_outline,
+                                  color: Colors.red, size: 18),
                               SizedBox(width: 8),
                               Text('Errore nel calcolo dimensione'),
                             ],
                           );
                         } else {
-                          final sizeKB = (snapshot.data! / 1024).toStringAsFixed(1);
+                          final sizeKB =
+                              (snapshot.data! / 1024).toStringAsFixed(1);
                           return Row(
                             children: [
-                              const Icon(Icons.storage, color: Colors.green, size: 18),
+                              const Icon(Icons.storage,
+                                  color: Colors.green, size: 18),
                               const SizedBox(width: 8),
                               Text('$sizeKB KB'),
                             ],
@@ -282,19 +293,22 @@ class ExportService {
 
       final result = await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'Dati chilometrici esportati da Daily Counter\n\n📊 File Excel con 3 fogli di lavoro\n📅 ${DateUtils.getMonthName(DateTime.now().month)} ${DateTime.now().year}',
+        text:
+            'Dati chilometrici esportati da Daily Counter\n\n📊 File Excel con 3 fogli di lavoro\n📅 ${DateUtils.getMonthName(DateTime.now().month)} ${DateTime.now().year}',
         subject: 'Export Chilometri - ${file.path.split('/').last}',
         sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
       );
-      
+
       debugPrint('Condivisione completata: ${result.status}');
-      
+
       if (result.status == ShareResultStatus.success) {
         _showMessage(context, 'File condiviso con successo! 📤');
       }
     } catch (e) {
       debugPrint('Errore nella condivisione: $e');
-      _showMessage(context, 'Errore nella condivisione. Percorso copiato negli appunti.', isError: true);
+      _showMessage(
+          context, 'Errore nella condivisione. Percorso copiato negli appunti.',
+          isError: true);
       await _copyPathToClipboard(file);
     }
   }
@@ -308,7 +322,8 @@ class ExportService {
     }
   }
 
-  static void _showMessage(BuildContext context, String message, {bool isError = false}) {
+  static void _showMessage(BuildContext context, String message,
+      {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -327,9 +342,7 @@ class ExportService {
             ),
           ],
         ),
-        backgroundColor: isError 
-            ? Colors.red[600] 
-            : Colors.green[600],
+        backgroundColor: isError ? Colors.red[600] : Colors.green[600],
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),

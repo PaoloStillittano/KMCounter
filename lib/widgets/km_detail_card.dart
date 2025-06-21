@@ -75,6 +75,15 @@ class _KmDetailCardState extends State<KmDetailCard>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    
+    // Calcola l'altezza disponibile considerando la tastiera
+    final availableHeight = mediaQuery.size.height - 
+        mediaQuery.padding.top - 
+        mediaQuery.padding.bottom - 
+        keyboardHeight - 
+        32; // margin totale (16 * 2)
 
     return AnimatedBuilder(
       animation: _slideAnimation,
@@ -86,7 +95,10 @@ class _KmDetailCardState extends State<KmDetailCard>
             child: Center(
               child: Container(
                 margin: const EdgeInsets.all(16),
-                constraints: const BoxConstraints(maxWidth: 400),
+                constraints: BoxConstraints(
+                  maxWidth: 400,
+                  maxHeight: availableHeight,
+                ),
                 child: Material(
                   elevation: 8,
                   borderRadius: BorderRadius.circular(16),
@@ -106,9 +118,13 @@ class _KmDetailCardState extends State<KmDetailCard>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _HeaderSection(logic: _logic, entries: _entries),
-                        _ContentSection(
-                          logic: _logic,
-                          entries: _entries
+                        // Usa Flexible invece di un Container con altezza fissa
+                        Flexible(
+                          child: _ContentSection(
+                            logic: _logic,
+                            entries: _entries,
+                            availableHeight: availableHeight - 100, // Sottrai l'altezza dell'header
+                          ),
                         ),
                       ],
                     ),
@@ -197,24 +213,32 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 
-// Content section component
+// Content section component - Aggiornato per essere più responsive
 class _ContentSection extends StatelessWidget {
   final KmDetailLogic logic;
   final List<KmEntry> entries;
+  final double availableHeight;
 
   const _ContentSection({
     required this.logic,
     required this.entries,
+    required this.availableHeight,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      constraints: const BoxConstraints(maxHeight: 400),
+      constraints: BoxConstraints(
+        maxHeight: availableHeight.clamp(200.0, double.infinity),
+      ),
       child: entries.isEmpty
           ? _EmptyState(logic: logic)
-          : _EntriesList(logic: logic, entries: entries),
+          : _EntriesList(
+              logic: logic, 
+              entries: entries,
+              maxHeight: availableHeight - 40, // Sottrai il padding
+            ),
     );
   }
 }
@@ -231,64 +255,73 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Icon(
-          Icons.route,
-          size: 64,
-          color: theme.colorScheme.outline,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Nessun viaggio registrato',
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Aggiungi il tuo primo viaggio per questa data',
-          style: theme.textTheme.bodyMedium?.copyWith(
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.route,
+            size: 64,
             color: theme.colorScheme.outline,
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        _AddButton(logic: logic, isEmpty: true),
-      ],
+          const SizedBox(height: 16),
+          Text(
+            'Nessun viaggio registrato',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Aggiungi il tuo primo viaggio per questa data',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          _AddButton(logic: logic, isEmpty: true),
+        ],
+      ),
     );
   }
 }
 
-// Entries list component
+// Entries list component - Migliorato per la gestione dello spazio
 class _EntriesList extends StatelessWidget {
   final KmDetailLogic logic;
   final List<KmEntry> entries;
+  final double maxHeight;
 
   const _EntriesList({
     required this.logic,
     required this.entries,
+    required this.maxHeight,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          ...List.generate(entries.length, (index) {
-            final entry = entries[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _EntryCard(
-                logic: logic,
-                entry: entry,
-                index: index
-              ),
-            );
-          }),
-          const SizedBox(height: 16),
-          _AddButton(logic: logic, isEmpty: false),
-        ],
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...List.generate(entries.length, (index) {
+              final entry = entries[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _EntryCard(
+                  logic: logic,
+                  entry: entry,
+                  index: index
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+            _AddButton(logic: logic, isEmpty: false),
+          ],
+        ),
       ),
     );
   }
