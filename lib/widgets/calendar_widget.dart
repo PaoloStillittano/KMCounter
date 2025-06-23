@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/calendar_day.dart';
 import '../view_models/calendar_view_model.dart';
+import '../utils/app_themes.dart';
 
 class CalendarWidget extends StatefulWidget {
   final Function(DateTime) onDateSelected;
@@ -22,9 +23,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   @override
   void initState() {
     super.initState();
-    // Use addPostFrameCallback to safely call the callback after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Access the ViewModel safely after it's built
       final viewModel = Provider.of<CalendarViewModel>(context, listen: false);
       widget.onMonthChanged?.call(viewModel.currentMonth);
     });
@@ -32,7 +31,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to the ViewModel for changes
     final viewModel = context.watch<CalendarViewModel>();
 
     return Column(
@@ -60,8 +58,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   }
 }
 
-// --- UI Helper Widgets ---
-
 class _CalendarHeader extends StatelessWidget {
   final String monthYear;
   final VoidCallback onPrevious;
@@ -75,17 +71,34 @@ class _CalendarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(onPressed: onPrevious, icon: const Icon(Icons.chevron_left)),
+          IconButton(
+            onPressed: onPrevious, 
+            icon: Icon(
+              Icons.chevron_left,
+              color: theme.colorScheme.primary,
+            ),
+          ),
           Text(
             monthYear,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
-          IconButton(onPressed: onNext, icon: const Icon(Icons.chevron_right)),
+          IconButton(
+            onPressed: onNext, 
+            icon: Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.primary,
+            ),
+          ),
         ],
       ),
     );
@@ -96,6 +109,8 @@ class _WeekdayHeaders extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -105,7 +120,9 @@ class _WeekdayHeaders extends StatelessWidget {
               day,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: (day == 'Sab' || day == 'Dom') ? Colors.red : Colors.grey[600],
+                color: (day == 'Sab' || day == 'Dom') 
+                    ? AppThemes.holidayColor 
+                    : theme.colorScheme.onSurface.withAlpha(153),
                 fontSize: 12,
               ),
             ),
@@ -125,7 +142,11 @@ class _CalendarGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (days.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
     }
     
     return GridView.builder(
@@ -151,11 +172,30 @@ class _CalendarDayCell extends StatelessWidget {
 
   const _CalendarDayCell({required this.day, required this.onDateSelected});
 
-  Color _getDayTextColor() {
+  Color _getDayTextColor(BuildContext context) {
+    final theme = Theme.of(context);
+    
     if (day.isToday) return Colors.white;
-    if (!day.isCurrentMonth) return Colors.grey[400]!;
-    if (day.isHoliday) return Colors.red;
-    return Colors.black;
+    if (!day.isCurrentMonth) return theme.colorScheme.onSurface.withAlpha(77);
+    if (day.isHoliday) return AppThemes.holidayColor;
+    return theme.colorScheme.onSurface;
+  }
+
+  Color _getDayBackgroundColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    if (day.isToday) {
+      return isDark ? Colors.blue.withAlpha(115) : Colors.blue.withAlpha(230);
+    }
+    return Colors.transparent;
+  }
+
+  Color _getBorderColor(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return theme.brightness == Brightness.dark 
+        ? theme.colorScheme.outline.withAlpha(77)
+        : Colors.grey[300]!;
   }
 
   @override
@@ -164,9 +204,9 @@ class _CalendarDayCell extends StatelessWidget {
       onTap: day.isCurrentMonth ? () => onDateSelected(day.date) : null,
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!, width: 1),
+          border: Border.all(color: _getBorderColor(context), width: 1),
           borderRadius: BorderRadius.circular(8),
-          color: day.isToday ? Colors.blue.withAlpha(190) : null,
+          color: _getDayBackgroundColor(context),
         ),
         child: Stack(
           children: [
@@ -184,7 +224,7 @@ class _CalendarDayCell extends StatelessWidget {
                         flex: (day.personalPercentage * 100).round(),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.green,
+                            color: AppThemes.personalKmColor, 
                             borderRadius: BorderRadius.only(
                               bottomLeft: const Radius.circular(7),
                               bottomRight: day.workKm <= 0 ? const Radius.circular(7) : Radius.zero,
@@ -197,7 +237,7 @@ class _CalendarDayCell extends StatelessWidget {
                         flex: (day.workPercentage * 100).round(),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.orange,
+                            color: AppThemes.workKmColor, 
                             borderRadius: BorderRadius.only(
                               bottomRight: const Radius.circular(7),
                               bottomLeft: day.personalKm <= 0 ? const Radius.circular(7) : Radius.zero,
@@ -213,7 +253,7 @@ class _CalendarDayCell extends StatelessWidget {
               child: Text(
                 '${day.date.day}',
                 style: TextStyle(
-                  color: _getDayTextColor(),
+                  color: _getDayTextColor(context),
                   fontWeight: day.hasEntries && day.isCurrentMonth ? FontWeight.bold : FontWeight.normal,
                   fontSize: day.isCurrentMonth ? 14 : 12,
                 ),

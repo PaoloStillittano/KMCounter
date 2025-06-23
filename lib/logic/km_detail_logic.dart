@@ -22,7 +22,8 @@ class KmDetailLogic {
   }
 
   // Entry management
-  Future<void> addOrUpdateEntry(KmEntry? existingEntry, KmEntry newEntry) async {
+  Future<void> addOrUpdateEntry(
+      KmEntry? existingEntry, KmEntry newEntry) async {
     if (existingEntry != null) {
       final globalIndex = controller.entries.indexOf(existingEntry);
       if (globalIndex >= 0) {
@@ -89,12 +90,27 @@ class KmDetailLogic {
   // Utility methods
   String formatDate() {
     const weekdays = [
-      'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 
-      'Venerdì', 'Sabato', 'Domenica'
+      'Lunedì',
+      'Martedì',
+      'Mercoledì',
+      'Giovedì',
+      'Venerdì',
+      'Sabato',
+      'Domenica'
     ];
     const months = [
-      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+      'Gennaio',
+      'Febbraio',
+      'Marzo',
+      'Aprile',
+      'Maggio',
+      'Giugno',
+      'Luglio',
+      'Agosto',
+      'Settembre',
+      'Ottobre',
+      'Novembre',
+      'Dicembre'
     ];
     return '${weekdays[selectedDate.weekday - 1]} ${selectedDate.day} ${months[selectedDate.month - 1]}';
   }
@@ -183,80 +199,203 @@ class _AddEditEntryDialogState extends State<AddEditEntryDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isEditing = widget.entry != null;
+    final isDark = theme.brightness == Brightness.dark;
 
     return AlertDialog(
-      title: Text(isEditing ? 'Modifica Viaggio' : 'Nuovo Viaggio'),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextFormField(
-              controller: _kmController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Chilometri',
-                border: OutlineInputBorder(),
-                suffixText: 'km',
-                prefixIcon: Icon(Icons.route),
+      // Rimuovi il title tradizionale
+      title: null,
+      titlePadding: EdgeInsets.zero,
+      contentPadding: EdgeInsets.zero,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header Section ispirata a _HeaderSection
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Inserisci i chilometri';
-                }
-                final km = double.tryParse(value);
-                if (km == null || km <= 0) {
-                  return 'Inserisci un valore valido';
-                }
-                return null;
-              },
-              autofocus: true,
+              color: isDark
+                  ? Colors.white.withAlpha(38)
+                  : Colors.blue.withAlpha(115),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Categoria:',
-              style: theme.textTheme.titleSmall,
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: KmCategory.values.map((category) {
-                final isSelected = _selectedCategory == category;
-                final categoryColor = _getCategoryColor(category);
-                
-                return FilterChip(
-                  selected: isSelected,
-                  label: Text(category.displayName),
-                  avatar: Icon(
-                    isSelected ? Icons.check : Icons.circle,
-                    size: 16,
-                    color: isSelected ? Colors.white : categoryColor,
+            child: Row(
+              children: [
+                Icon(
+                  isEditing ? Icons.edit : Icons.add_road,
+                  color: theme.colorScheme.onPrimaryContainer,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isEditing ? 'Modifica Viaggio' : 'Nuovo Viaggio',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      Text(
+                        isEditing
+                            ? 'Aggiorna i dettagli del viaggio'
+                            : 'Aggiungi un nuovo viaggio',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer
+                              .withAlpha(180),
+                        ),
+                      ),
+                    ],
                   ),
-                  onSelected: (_) {
-                    setState(() {
-                      _selectedCategory = category;
-                    });
-                  },
-                  selectedColor: categoryColor,
-                  checkmarkColor: Colors.white,
-                );
-              }).toList(),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(
+                    Icons.close,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                  tooltip: 'Chiudi',
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // Form Content
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _kmController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Chilometri',
+                      labelStyle: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                      border: const OutlineInputBorder(),
+                      suffixText: 'km',
+                      prefixIcon: const Icon(Icons.route),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.white.withAlpha(38)
+                              : Colors.black.withAlpha(130),
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Inserisci i chilometri';
+                      }
+                      final km = double.tryParse(value);
+                      if (km == null || km <= 0) {
+                        return 'Inserisci un valore valido';
+                      }
+                      return null;
+                    },
+                    autofocus: true,
+                    showCursor: false,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Categoria:',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: KmCategory.values.map((category) {
+                      final isSelected = _selectedCategory == category;
+                      final categoryColor = _getCategoryColor(category);
+
+                      return FilterChip(
+                        selected: isSelected,
+                        label: Text(
+                          category.displayName,
+                          style: TextStyle(
+                            color: isSelected ? categoryColor : null,
+                            fontWeight: isSelected ? FontWeight.bold : null,
+                          ),
+                        ),
+                        avatar: Icon(
+                          isSelected ? Icons.check : Icons.circle,
+                          size: 16,
+                          color: categoryColor,
+                        ),
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedCategory = category;
+                          });
+                        },
+                        selectedColor: isDark
+                            ? Colors.white.withAlpha(20)
+                            : Colors.black.withAlpha(20),
+                        backgroundColor: isDark
+                            ? Colors.white.withAlpha(20)
+                            : Colors.black.withAlpha(20),
+                        checkmarkColor: categoryColor,
+                        side: BorderSide(
+                          color: categoryColor,
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annulla'),
+          child: Text(
+            'Annulla',
+            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+          ),
         ),
         ElevatedButton(
           onPressed: _save,
-          child: Text(isEditing ? 'Salva' : 'Aggiungi'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(
+                color: isDark
+                    ? Colors.white.withAlpha(38)
+                    : Colors.black.withAlpha(130),
+                width: 2,
+              ),
+            ),
+          ),
+          child: Text(
+            isEditing ? 'Salva' : 'Aggiungi',
+            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+          ),
         ),
       ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
     );
   }
 

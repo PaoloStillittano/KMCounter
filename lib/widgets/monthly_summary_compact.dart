@@ -4,6 +4,7 @@ import '../models/km_entry.dart';
 import 'package:provider/provider.dart';
 import '../controllers/km_controller.dart';
 import '../utils/date_utils.dart' as my_date_utils;
+import '../utils/app_themes.dart';
 
 class MonthlySummaryCompact extends StatelessWidget {
   final DateTime currentMonth;
@@ -32,23 +33,22 @@ class MonthlySummaryCompact extends StatelessWidget {
           KmCategory.work,
         );
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return Container(
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, Colors.grey[50]!],
-            ),
+            color: isDark
+                ? Colors.black.withAlpha(20)
+                : Colors.white70,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(35),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withAlpha(38)
+                  : Colors.black.withAlpha(38),
+              width: 1,
+            ),
           ),
           child: Column(
             children: [
@@ -57,7 +57,7 @@ class MonthlySummaryCompact extends StatelessWidget {
               _buildStatsRow(personalKm, workKm),
               if (totalKm > 0) ...[
                 const SizedBox(height: 12),
-                _buildProgressBar(personalKm, workKm, totalKm),
+                _buildProgressBar(context, personalKm, workKm, totalKm),
               ],
             ],
           ),
@@ -67,22 +67,19 @@ class MonthlySummaryCompact extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, double totalKm) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).primaryColor,
-                Theme.of(context).primaryColor.withAlpha(120),
-              ],
-            ),
+            color: isDark ? Colors.white.withAlpha(38): Colors.blue.withAlpha(115),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.calendar_view_month,
-            color: Colors.white,
+            color: isDark ? Colors.white: Colors.black.withAlpha(200),
             size: 20,
           ),
         ),
@@ -93,15 +90,16 @@ class MonthlySummaryCompact extends StatelessWidget {
             children: [
               Text(
                 my_date_utils.DateUtils.getMonthYearString(currentMonth),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               Text(
                 'Riepilogo mensile',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: theme.colorScheme.onSurface.withAlpha(153), 
                 ),
               ),
             ],
@@ -110,13 +108,15 @@ class MonthlySummaryCompact extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withAlpha(70),
-            borderRadius: BorderRadius.circular(12),
+            color: isDark
+                ? Colors.white.withAlpha(38)
+                : Colors.blue.withAlpha(115),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             '${totalKm.toStringAsFixed(0)} km',
             style: TextStyle(
-              color: Theme.of(context).primaryColor,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -133,7 +133,7 @@ class MonthlySummaryCompact extends StatelessWidget {
           child: _StatCard(
             label: 'Personali',
             km: personalKm,
-            color: Colors.green,
+            color: AppThemes.personalKmColor,
           ),
         ),
         const SizedBox(width: 8),
@@ -141,21 +141,21 @@ class MonthlySummaryCompact extends StatelessWidget {
           child: _StatCard(
             label: 'Lavoro',
             km: workKm,
-            color: Colors.orange,
+            color: AppThemes.workKmColor,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildProgressBar(double personalKm, double workKm, double totalKm) {
+  Widget _buildProgressBar(BuildContext context, double personalKm, double workKm, double totalKm) {
     final personalPercentage = personalKm / totalKm;
     final workPercentage = workKm / totalKm;
 
     return Container(
       height: 4,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: Theme.of(context).colorScheme.outline.withAlpha(80),
         borderRadius: BorderRadius.circular(2),
       ),
       child: Row(
@@ -165,7 +165,7 @@ class MonthlySummaryCompact extends StatelessWidget {
               flex: (personalPercentage * 100).round(),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.green,
+                  color: AppThemes.personalKmColor,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(2),
                     bottomLeft: const Radius.circular(2),
@@ -182,7 +182,7 @@ class MonthlySummaryCompact extends StatelessWidget {
               flex: (workPercentage * 100).round(),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.orange,
+                  color: AppThemes.workKmColor,
                   borderRadius: BorderRadius.only(
                     topRight: const Radius.circular(2),
                     bottomRight: const Radius.circular(2),
@@ -215,12 +215,21 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withAlpha(35),
+        color: isDark 
+            ? color.withAlpha(50) 
+            : color.withAlpha(45),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(80)),
+        border: Border.all(
+          color: isDark 
+              ? color.withAlpha(120) 
+              : color.withAlpha(80),
+        ),
       ),
       child: Row(
         children: [
@@ -241,7 +250,7 @@ class _StatCard extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey[600],
+                    color: theme.colorScheme.onSurface, 
                   ),
                 ),
                 Text(
@@ -249,7 +258,9 @@ class _StatCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: color,
+                    color: isDark 
+                        ? color.withAlpha(220) 
+                        : color,
                   ),
                 ),
               ],

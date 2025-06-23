@@ -1,4 +1,5 @@
 // widgets/home_app_bar.dart
+import 'package:counter/widgets/theme_switch_widget.dart';
 import '../controllers/km_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +37,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: _buildTitle(),
       actions: [
+        const ThemeToggleIconButton(),
         _buildMenuButton(context),
         const SizedBox(width: 12),
       ],
@@ -91,87 +93,29 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  // Widget _buildMonthlyStats(BuildContext context) {
-  //   return Consumer<KmController>(
-  //     builder: (context, controller, child) {
-  //       final monthlyTotal = controller.getTotalKilometersForMonth(
-  //         currentMonth.year,
-  //         currentMonth.month,
-  //       );
-
-  //       return Container(
-  //         margin: const EdgeInsets.only(right: 12),
-  //         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-  //         decoration: BoxDecoration(
-  //           color: Colors.white.withAlpha(38),
-  //           borderRadius: BorderRadius.circular(22),
-  //           border: Border.all(
-  //             color: Colors.white.withAlpha(51),
-  //             width: 1,
-  //           ),
-  //         ),
-  //         child: Row(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             Container(
-  //               padding: const EdgeInsets.all(4),
-  //               decoration: BoxDecoration(
-  //                 color: Colors.white.withAlpha(51),
-  //                 borderRadius: BorderRadius.circular(8),
-  //               ),
-  //               child: const Icon(
-  //                 Icons.calendar_today_rounded,
-  //                 color: Colors.white,
-  //                 size: 14,
-  //               ),
-  //             ),
-  //             const SizedBox(width: 6),
-  //             Text(
-  //               '${monthlyTotal.toStringAsFixed(0)}km',
-  //               style: const TextStyle(
-  //                 color: Colors.white,
-  //                 fontSize: 13,
-  //                 fontWeight: FontWeight.w600,
-  //                 letterSpacing: 0.2,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
   Widget _buildMenuButton(BuildContext context) {
     return PopupMenuButton<String>(
       icon: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(38),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.white.withAlpha(51),
-            width: 1,
-          ),
-        ),
+        padding: const EdgeInsets.all(5),
         child: const Icon(
           Icons.more_vert_rounded,
           color: Colors.white,
-          size: 20,
+          size: 25,
         ),
       ),
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       elevation: 12,
       shadowColor: Colors.black26,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      offset: const Offset(0, 8),
+      offset: const Offset(0, 55),
       constraints: const BoxConstraints(
         minWidth: 200,
       ),
       itemBuilder: (context) => [
         _buildMenuItem(
+          context,
           Icons.bar_chart_rounded,
           'Statistiche',
           'stats',
@@ -180,6 +124,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         _buildDivider(),
         _buildMenuItem(
+          context,
           Icons.file_download_rounded,
           'Esporta dati',
           'export',
@@ -188,6 +133,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         _buildDivider(),
         _buildMenuItem(
+          context,
           Icons.settings_rounded,
           'Impostazioni',
           'settings',
@@ -196,6 +142,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         _buildDivider(),
         _buildMenuItem(
+          context,
           Icons.info_outline_rounded,
           'Info',
           'info',
@@ -208,12 +155,15 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   PopupMenuItem<String> _buildMenuItem(
+    BuildContext context,
     IconData icon, 
     String title, 
     String value,
     String subtitle,
     Color iconColor,
   ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return PopupMenuItem(
       value: value,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -239,10 +189,10 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: isDarkMode ? Colors.white : Colors.black,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -250,7 +200,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
                     fontWeight: FontWeight.w400,
                   ),
                 ),

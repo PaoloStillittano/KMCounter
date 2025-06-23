@@ -74,16 +74,14 @@ class _KmDetailCardState extends State<KmDetailCard>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
     final keyboardHeight = mediaQuery.viewInsets.bottom;
-    
-    // Calcola l'altezza disponibile considerando la tastiera
-    final availableHeight = mediaQuery.size.height - 
-        mediaQuery.padding.top - 
-        mediaQuery.padding.bottom - 
-        keyboardHeight - 
-        32; // margin totale (16 * 2)
+
+    final availableHeight = mediaQuery.size.height -
+        mediaQuery.padding.top -
+        mediaQuery.padding.bottom -
+        keyboardHeight -
+        32;
 
     return AnimatedBuilder(
       animation: _slideAnimation,
@@ -105,25 +103,16 @@ class _KmDetailCardState extends State<KmDetailCard>
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          theme.colorScheme.surface,
-                          theme.colorScheme.surface.withAlpha(230),
-                        ],
-                      ),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _HeaderSection(logic: _logic, entries: _entries),
-                        // Usa Flexible invece di un Container con altezza fissa
                         Flexible(
                           child: _ContentSection(
                             logic: _logic,
                             entries: _entries,
-                            availableHeight: availableHeight - 100, // Sottrai l'altezza dell'header
+                            availableHeight: availableHeight - 100,
                           ),
                         ),
                       ],
@@ -146,7 +135,6 @@ class _KmDetailCardState extends State<KmDetailCard>
   }
 }
 
-// Header section component
 class _HeaderSection extends StatelessWidget {
   final KmDetailLogic logic;
   final List<KmEntry> entries;
@@ -158,6 +146,7 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final theme = Theme.of(context);
 
     return Container(
@@ -167,7 +156,7 @@ class _HeaderSection extends StatelessWidget {
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
         ),
-        color: theme.colorScheme.primaryContainer,
+        color: isDark ? Colors.white.withAlpha(38) : Colors.blue.withAlpha(115),
       ),
       child: Row(
         children: [
@@ -213,7 +202,6 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 
-// Content section component - Aggiornato per essere più responsive
 class _ContentSection extends StatelessWidget {
   final KmDetailLogic logic;
   final List<KmEntry> entries;
@@ -235,15 +223,14 @@ class _ContentSection extends StatelessWidget {
       child: entries.isEmpty
           ? _EmptyState(logic: logic)
           : _EntriesList(
-              logic: logic, 
+              logic: logic,
               entries: entries,
-              maxHeight: availableHeight - 40, // Sottrai il padding
+              maxHeight: availableHeight - 40,
             ),
     );
   }
 }
 
-// Empty state component
 class _EmptyState extends StatelessWidget {
   final KmDetailLogic logic;
 
@@ -287,7 +274,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// Entries list component - Migliorato per la gestione dello spazio
 class _EntriesList extends StatelessWidget {
   final KmDetailLogic logic;
   final List<KmEntry> entries;
@@ -311,11 +297,7 @@ class _EntriesList extends StatelessWidget {
               final entry = entries[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _EntryCard(
-                  logic: logic,
-                  entry: entry,
-                  index: index
-                ),
+                child: _EntryCard(logic: logic, entry: entry, index: index),
               );
             }),
             const SizedBox(height: 16),
@@ -327,7 +309,6 @@ class _EntriesList extends StatelessWidget {
   }
 }
 
-// Entry card component
 class _EntryCard extends StatelessWidget {
   final KmDetailLogic logic;
   final KmEntry entry;
@@ -343,22 +324,29 @@ class _EntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final categoryColor = logic.getCategoryColor(entry.category);
-
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () => logic.showAddEditDialog(entry: entry, index: index),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: isDark 
+                ? Colors.white.withAlpha(18)
+                : Colors.white.withAlpha(115),
+          ),
           child: Row(
             children: [
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: categoryColor.withAlpha(25),
+                  color: categoryColor.withAlpha(35),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -389,10 +377,7 @@ class _EntryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _EntryPopupMenu(
-                  logic: logic,
-                  entry: entry,
-                  index: index),
+              _EntryPopupMenu(logic: logic, entry: entry, index: index),
             ],
           ),
         ),
@@ -401,7 +386,6 @@ class _EntryCard extends StatelessWidget {
   }
 }
 
-// Entry popup menu component
 class _EntryPopupMenu extends StatelessWidget {
   final KmDetailLogic logic;
   final KmEntry entry;
@@ -455,7 +439,6 @@ class _EntryPopupMenu extends StatelessWidget {
   }
 }
 
-// Add button component
 class _AddButton extends StatelessWidget {
   final KmDetailLogic logic;
   final bool isEmpty;
@@ -467,6 +450,8 @@ class _AddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
@@ -476,10 +461,16 @@ class _AddButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          backgroundColor:
+              isDark ? Colors.white.withAlpha(38) : Colors.white,
         ),
-        icon: const Icon(Icons.add),
-        label:
-            Text(isEmpty ? 'Aggiungi primo viaggio' : 'Aggiungi nuovo viaggio'),
+        icon: Icon(Icons.add, color: isDark ? Colors.white : Colors.black),
+        label: Text(
+          isEmpty ? 'Aggiungi primo viaggio' : 'Aggiungi nuovo viaggio',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
       ),
     );
   }

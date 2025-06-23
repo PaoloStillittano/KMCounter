@@ -54,6 +54,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return ChangeNotifierProvider.value(
       value: _controller,
       child: Scaffold(
@@ -73,7 +75,7 @@ class _HomePageState extends State<HomePage> {
                 child: GestureDetector(
                   onTap: _onDetailCardClose,
                   child: Container(
-                    color: Colors.black.withAlpha(40),
+                    color: isDark ? Colors.white.withAlpha(5) : Colors.black.withAlpha(60),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: MediaQuery.of(context).size.width * 0.05,
