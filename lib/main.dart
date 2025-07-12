@@ -65,6 +65,7 @@ class _MyAppState extends State<MyApp> {
             darkTheme: AppThemes.darkTheme,
             themeMode: themeController.themeMode,
             home: const HomePage(),
+            debugShowCheckedModeBanner: false,
           );
         },
       ),
